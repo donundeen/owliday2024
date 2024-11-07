@@ -1,0 +1,16 @@
+{
+  "name": "owliday2024",
+  "version": "1.0.0",
+  "description": "owliday fun",
+  "main": "index.node.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "midi-file": "^1.2.4",
+    "midi-parser-js": "^4.0.4"
+  }
+}
