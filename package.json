@@ -9,8 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "connect": "^3.7.0",
     "fs": "^0.0.1-security",
     "midi-file": "^1.2.4",
-    "midi-parser-js": "^4.0.4"
+    "midi-parser-js": "^4.0.4",
+    "serve-static": "^1.16.2",
+    "ws": "^8.18.0"
   }
 }
