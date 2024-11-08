@@ -18,7 +18,7 @@ let default_webpage = "index.html";
 
 parser = Object.create(MidiParser);
 parser.db = db;
-parser.midiFile = "./Christmas_Carols_-_12_Days_Of_Christmas.mid";
+parser.midiFile = "html/midi/12Days.mid"; 
 parser.startTime = (new Date()).getTime() + 10000 ; // add 10 seconds
 
 parser.parseMidiFile();

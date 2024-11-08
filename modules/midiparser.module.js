@@ -15,7 +15,7 @@ let MidiParser = {
 
   parseMidiFile(){
 
-    let data = fs.readFileSync(file);
+    let data = fs.readFileSync(this.midiFile);
     this.parsedFile  = midiParser.parse(data);
     
     console.log(`Tracks: ${this.parsedFile .tracks}, TimeDivision: ${this.parsedFile .timeDivision}`);
@@ -52,8 +52,6 @@ let MidiParser = {
 
 exports.MidiParser = MidiParser;
 
-
-let file = "./Christmas_Carols_-_12_Days_Of_Christmas.mid";
 
 
 

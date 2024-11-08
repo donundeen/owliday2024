@@ -8,8 +8,14 @@ var playing = false;
 var out;
 
 
+
+
 $(function() {
 
+
+    setInterval(function(){
+        $(".time").text(Date.now());
+    },1);
     console.log("starting");
 
     // chnage this depending on location of webserver. Figure out a way to make this more dynamic...
