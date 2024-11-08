@@ -1,6 +1,13 @@
 let WEBSOCKET_PORT= 8099;
 let WEBSERVER_PORT = 8082;
 
+let midifile = "midi/12Days.mid";
+
+var player;
+var playing = false;
+var out;
+
+
 $(function() {
 
     console.log("starting");
@@ -11,6 +18,21 @@ $(function() {
     // remove port
     console.log(host);
 
+
+    $(".play").on("click", function(){
+        JZZ.synth.Tiny.register('Web Audio');
+        out = JZZ().or(console.log('Cannot start MIDI engine!')).openMidiOut().or(console.log('Cannot open MIDI Out!'));
+
+
+/*
+        JZZ.synth.Tiny().noteOn(0, 'C5', 127)
+            .wait(500).noteOn(0, 'E5', 127)
+            .wait(500).noteOn(0, 'G5', 127)
+            .wait(500).noteOff(0, 'C5').noteOff(0, 'E5').noteOff(0, 'G5');
+            */
+        fromURL();
+
+    });
 
 
     // some note characters: 
@@ -28,9 +50,6 @@ $(function() {
     ws.onopen = function() {
         wsready = true;
         console.log("opened " + ws.readyState);
-        message("getvoicelist",1);        
-        message("getperformancelist",1);
-        message("getscorelist",1);
         message("ready", "READY NOW")
     };
 
@@ -76,3 +95,83 @@ $(function() {
 
 });
 
+
+function fromURL() {
+    console.log("fromURL");
+    clear();
+    var url = midifile;
+    try {
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4) {
+          if (this.status == 200) {
+            var r, i;
+            var data = '';
+            r = xhttp.response;
+            if (r instanceof ArrayBuffer) {
+              r = new Uint8Array(r);
+              for (i = 0; i < r.length; i++) data += String.fromCharCode(r[i]);
+            }
+            else { // for really antique browsers
+              r = xhttp.responseText;
+              for (i = 0; i < r.length; i++) data += String.fromCharCode(r.charCodeAt(i) & 0xff);
+            }
+            load(data, url);
+          }
+          else {
+            log.innerHTML = 'XMLHttpRequest error';
+          }
+        }
+      };
+      try { xhttp.responseType = 'arraybuffer'; } catch (e) {}
+      xhttp.overrideMimeType('text/plain; charset=x-user-defined');
+      xhttp.open('GET', url, true);
+      xhttp.send();
+    }
+    catch (e) {
+      log.innerHTML = 'XMLHttpRequest error';
+    }
+  }
+
+  function load(data, name) {
+    console.log("load");
+    try {
+      player = JZZ.MIDI.SMF(data).player();
+      player.connect(out);
+      player.connect(function(msg) {
+        midievent(msg);
+      });      
+      player.onEnd = function() {
+        playing = false;
+        btn.innerHTML = 'Play';
+      }
+      playing = true;
+      player.play();
+      console.log(name);
+      btn.innerHTML = 'Stop';
+      btn.disabled = false;
+    }
+    catch (e) {
+      console.log(e);
+    }
+  }
+
+  function clear() {
+    if (player) player.stop();
+    playing = false;
+}
+
+function playStop() {
+    if (playing) {
+      player.stop();
+      playing = false;
+    }
+    else {
+      player.play();
+      playing = true;
+    }
+  }
+
+  function midievent(msg){
+    console.log(msg);
+  }
