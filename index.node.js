@@ -66,7 +66,7 @@ socket.setMessageReceivedCallback(function(msg, ip){
 
 
     routeFromWebsocket(msg, ip, "memberstart", function(msg, ip){
-        console.log("newchoirmember", msg);
+        console.log("memberstart", msg);
         if(scorestartime == 0){
             let clienttime = msg.clienttime;
             scorestartime = clienttime + 1000; // wait 5 seconds;
@@ -98,8 +98,13 @@ socket.setMessageReceivedCallback(function(msg, ip){
 
 socket.setDisconnectCallback(function(ip){
     choir.removeMember(ip);
-    choir.distributeChannels();
-    sendUpdatedChannels(choir);
+    if(choir.hasMembers()){
+        choir.distributeChannels();
+        sendUpdatedChannels(choir);
+    }else{
+        playing = false;
+        starttime = 0;
+    }
 });
 
 function sendUpdatedChannels(choir){

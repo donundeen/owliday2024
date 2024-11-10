@@ -9,6 +9,13 @@ let Choir = {
     },
 
 
+    hasMembers(){
+        if(Object.keys(this.members).length > 0){
+            return true;
+        }
+        return false;
+    },
+
     allMembersCallback(callback){
         let memberkeys = Object.keys(this.members);
         // unset channels for all members

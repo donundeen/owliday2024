@@ -315,6 +315,7 @@ function updateChannels(_myChannels, _allchannels){
     if(playing){
         setupChannelVolumes();
     }
+    $(".channels").text(JSON.stringify(myChannels, null , "  "));
 }
 
 function setupChannelPrograms(){
