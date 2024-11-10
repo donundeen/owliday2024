@@ -7,15 +7,21 @@ var player;
 var playing = false;
 var out;
 
+let started = false;
 
+let tinysynth = false; //JZZ().openMidiOut('Web Audio');
 
+let timeskew = 0;
 
 $(function() {
 
 
+    
     setInterval(function(){
-        $(".time").text(Date.now());
-    },1);
+        $(".time2").text(Math.floor(correctedNow() / 1000));
+
+    },10);
+    
     console.log("starting");
 
     // chnage this depending on location of webserver. Figure out a way to make this more dynamic...
@@ -26,8 +32,33 @@ $(function() {
 
 
     $(".play").on("click", function(){
+
+        if(started){
+            return;
+        }
+        console.log("starting");
+        started = true;
+
+        let now = correctedNow();
+        //let now = Date.now();
+        let data = {clienttime: now};
+        message("newchoirmember", data);
+        
+
+
+        /*
+        setInterval(function(){
+            midiMakeNote(Math.floor(Math.random() * 24) + 64, 127, 500);
+
+        },200)
+        */
+//        message("startscore", true);
+
+
+        
         JZZ.synth.Tiny.register('Web Audio');
-        out = JZZ().or(console.log('Cannot start MIDI engine!')).openMidiOut().or(console.log('Cannot open MIDI Out!'));
+        tinysynth = JZZ().openMidiOut('Web Audio');
+     //   out = JZZ().or(console.log('Cannot start MIDI engine!')).openMidiOut().or(console.log('Cannot open MIDI Out!'));
 
 
 /*
@@ -36,7 +67,7 @@ $(function() {
             .wait(500).noteOn(0, 'G5', 127)
             .wait(500).noteOff(0, 'C5').noteOff(0, 'E5').noteOff(0, 'G5');
             */
-        fromURL();
+//        fromURL();
 
     });
 
@@ -70,18 +101,30 @@ $(function() {
     }
 
     ws.onmessage = function(event) {
-//        console.log("got message "+ event);
+        console.log("got message ", event);
+     //   midiMakeNote(64, 127, 500);
         msg = JSON.parse(event.data);
 //        console.log(msg.address);
+console.log(msg);
 
         // this is the format. Change the messages as needed
         if(msg.address == "score"){
             updateScore(msg.data);
         }
 
-        if(msg.address == "curbeat"){
-            updateBeat(msg.data[0],msg.data[1],msg.data[2]);
+        if(msg.address == "playnote"){
+            midiMakeNote(msg.data.pitch, msg.data.velocity, msg.data.duration)
         }
+
+        if(msg.address == "servertime"){
+            processServerTime(msg);
+        }
+
+        if(msg.address == "startplaying"){
+            startMidiFile(msg.data.starttime);
+
+        }
+
         // add message about adding a new instrument here
     }
 
@@ -102,7 +145,74 @@ $(function() {
 });
 
 
-function fromURL() {
+
+function correctedNow(){
+    return  Date.now() + timeskew;
+}
+
+function processServerTime(msg){
+    console.log("processServerTime");
+//    let nowTimeStamp = Date.now();
+    let nowTimeStamp = correctedNow();
+    var clientTimestamp = msg.data.clientnow;    
+    let serverTimestamp = msg.data.servernow;
+    let responsediff = nowTimeStamp - msg.data.servernow;
+    let serverClientRequestDiffTime = msg.data.difference;
+    let serverClientResponseDiffTime = nowTimeStamp - serverTimestamp;
+
+    //https://stackoverflow.com/questions/1638337/the-best-way-to-synchronize-client-side-javascript-clock-with-server-date
+    var responseTime = (serverClientRequestDiffTime - nowTimeStamp + clientTimestamp - serverClientResponseDiffTime ) / 2
+    console.log("responseTime", responseTime);
+    // Calculate the synced server time
+    console.log("adjusted time ", nowTimeStamp + (serverClientResponseDiffTime - responseTime))
+    var syncedServerTime = new Date(nowTimeStamp + (serverClientResponseDiffTime - responseTime)).getTime();
+    
+    console.log("got server time",  syncedServerTime);
+
+    timeskew = syncedServerTime - nowTimeStamp;
+
+    timeobj = {
+        nowTimeStamp : nowTimeStamp,
+        clientTimestamp :clientTimestamp,   
+        serverTimestamp :serverTimestamp,
+        responsediff :responsediff,
+        serverClientRequestDiffTime :serverClientRequestDiffTime,
+        serverClientResponseDiffTime :serverClientResponseDiffTime,  
+        syncedServerTime : syncedServerTime,
+        skew: timeskew
+    }
+    
+    console.log(timeobj);    
+
+    $(".dbg").text(JSON.stringify(timeobj, null, "  "));
+}
+
+let notecount = 0;
+function midiMakeNote(pitch, velocity, duration){
+    if(!started){
+        return;
+    }
+    notecount++;
+    $(".time").text(notecount +" " +pitch + " "+ velocity + " " + duration);
+
+    tinysynth.noteOn(0, pitch, velocity)
+  //  .wait(duration).noteOff(0, pitch);
+    
+    setTimeout(function(){
+       tinysynth.noteOff(0, pitch);
+    }, duration);
+
+}
+
+
+function startMidiFile(starttime){
+    let waittime = starttime - Date.now();
+    console.log("starting midi file at", starttime, waittime);
+    $(".dbg").text("starting at " + starttime + " in "+waittime);
+    fromURL(starttime);
+}
+
+function fromURL(starttime) {
     console.log("fromURL");
     clear();
     var url = midifile;
@@ -122,7 +232,7 @@ function fromURL() {
               r = xhttp.responseText;
               for (i = 0; i < r.length; i++) data += String.fromCharCode(r.charCodeAt(i) & 0xff);
             }
-            load(data, url);
+            load(data, url, starttime);
           }
           else {
             log.innerHTML = 'XMLHttpRequest error';
@@ -137,32 +247,34 @@ function fromURL() {
     catch (e) {
       log.innerHTML = 'XMLHttpRequest error';
     }
-  }
+}
 
-  function load(data, name) {
-    console.log("load");
+function load(data, name, starttime) {
+    console.log("load", name);
     try {
-      player = JZZ.MIDI.SMF(data).player();
-      player.connect(out);
-      player.connect(function(msg) {
-        midievent(msg);
-      });      
-      player.onEnd = function() {
-        playing = false;
-        btn.innerHTML = 'Play';
-      }
-      playing = true;
-      player.play();
-      console.log(name);
-      btn.innerHTML = 'Stop';
-      btn.disabled = false;
+        player = JZZ.MIDI.SMF(data).player();
+        player.connect(tinysynth);
+        player.connect(function(msg) {
+            midievent(msg);
+        });      
+        player.onEnd = function() {
+            playing = false;
+        }
+        let waittime = starttime - correctedNow();
+        if(waittime > 0){
+            console.log("waiting");
+            setTimeout(function(){
+                playing = true;
+                player.play();        
+            }, waittime);
+        }
     }
     catch (e) {
-      console.log(e);
+        console.log(e);
     }
-  }
+}
 
-  function clear() {
+function clear() {
     if (player) player.stop();
     playing = false;
 }
@@ -176,8 +288,8 @@ function playStop() {
       player.play();
       playing = true;
     }
-  }
+}
 
-  function midievent(msg){
+function midievent(msg){
     console.log(msg);
-  }
+}

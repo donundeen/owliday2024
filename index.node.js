@@ -14,7 +14,8 @@ let WEBSOCKET_PORT= 8099;
 let WEBSERVER_PORT = 8082;
 let default_webpage = "index.html";
 
-
+let playing = false;
+let scorestartime = 0;
 
 parser = Object.create(MidiParser);
 parser.db = db;
@@ -29,6 +30,9 @@ SocketServer.default_webpage = default_webpage;
 socket = Object.create(SocketServer);
 socket.db = db;
 
+
+
+
 socket.setMessageReceivedCallback(function(msg){
 
     // this is the format for handling messages.
@@ -37,6 +41,45 @@ socket.setMessageReceivedCallback(function(msg){
         let data = {scorename : score.scoreFilename,
                 text: score.scoreText};
         socket.sendMessage("score", parser.parsedFile);    
+    });
+
+    routeFromWebsocket(msg, "gettime", function(msg){
+        console.log("gettime", msg);
+        let clientnow = msg.clienttime;
+        let now = Date.now();
+        console.log(now, clientnow, now-clientnow);
+        let data = {
+            servernow: now,
+            clientnow: clientnow,
+            difference: now - clientnow
+        }
+        socket.sendMessage("servertime", data);    
+    });
+
+
+    routeFromWebsocket(msg, "newchoirmember", function(msg){
+        if(scorestartime == 0){
+            let clienttime = msg.clienttime;
+            scorestartime = clienttime + 5000; // wait 10 seconds;
+        }
+        let data ={starttime: scorestartime};
+        socket.sendMessage("startplaying", data);
+    });
+
+    routeFromWebsocket(msg, "startscore", function(msg){    
+        if(playing){
+            return;
+        } 
+        playing = true;
+        setInterval(function(){
+            /*
+            let data = {pitch : Math.floor(Math.random() * 24 + 30),
+                        velocity: 127,
+                        duration: 500,
+            };
+            */
+            socket.sendMessage("boop", true);    
+        },1000);
     });
 
 });
@@ -67,3 +110,4 @@ function routeFromWebsocket(msg, route, callback){
 // start the socket server and the web server
 socket.startSocketServer();
 socket.startWebServer();
+
