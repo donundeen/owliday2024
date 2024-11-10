@@ -32,27 +32,30 @@ let SocketServer = {
     
     let self = this;
 
-    this.socketserver.on('connection', (function(socket) {
+    this.socketserver.on('connection', (function(socket, req) {
+      console.log("socket connected");
+      const ip = req.socket.remoteAddress;
+      socket.ip = ip;
+
+      console.log(ip);
       this.sockets.push(socket);
       this.db.log("STARTD websockets " +globalvar);
 //      this.db.log(this.socketserver);
 
       // When you receive a message, send that message to every socket.
-      socket.on('message', (function(msg) {
-        //this.socketserver.onmessage = function(msg) {
-            this.db.log("got message");
-          //this.sockets.forEach(s => s.send(msg)); // send back out - we don't need to do this
-      //  	this.db.log(msg);
-      //	  this.db.log("Got message " + msg.toString());
-          //this is messages FROM the web page
-          this.db.log(msg.toString());
-          let newmsg = JSON.parse(msg.toString());          
-          this.db.log(newmsg);
-        this.messageReceived(newmsg);
+      socket.on('message', (function(msg, req) {
+        this.db.log("got message ", socket.ip);
+        //this is messages FROM the web page
+        this.db.log(msg.toString());
+        let newmsg = JSON.parse(msg.toString());          
+        this.db.log(newmsg);
+        this.messageReceived(newmsg, socket.ip);
       }).bind(this));
 
       // When a socket closes, or disconnects, remove it from the array.
       socket.on('close', (function() {
+        console.log("socket disconnected", socket.ip);
+        this.socketDisconnected(socket.ip);
         this.sockets = this.sockets.filter(s => s !== socket);
       }).bind(this));
 
@@ -60,9 +63,19 @@ let SocketServer = {
 
   },
 
-  messageReceived(msg){
+  socketDisconnected(ip){
+    if(this.disconnectCallback){
+      this.disconnectCallback(ip);
+    }
+  },
+
+  setDisconnectCallback(callback){
+    this.disconnectCallback = callback;
+  },
+
+  messageReceived(msg, ip){
     if(this.messageReceivedCallback){
-      this.messageReceivedCallback(msg);
+      this.messageReceivedCallback(msg, ip);
     }
   },
 
@@ -71,12 +84,20 @@ let SocketServer = {
   },
 
 
-  sendMessage(address, data){
+  sendMessage(address, data,ip){
     let msg = {
       address: address,
       data : data
     }
-    this.sockets.forEach(s => s.send(JSON.stringify(msg)));
+    if(ip){
+      this.sockets.forEach(s=>{
+        if(s.ip == ip){
+          s.send(JSON.stringify(msg));
+        }
+      })
+    }else{
+      this.sockets.forEach(s => s.send(JSON.stringify(msg)));
+    }
   },
 
   startWebServer(){

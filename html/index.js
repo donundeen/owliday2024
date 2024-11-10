@@ -13,6 +13,13 @@ let tinysynth = false; //JZZ().openMidiOut('Web Audio');
 
 let timeskew = 0;
 
+let firstnoteplayed = false;
+
+let uniqID = Math.random() * 10000 * Date.now(); 
+
+let myChannels = []; // array of channel numbers that I'm playing. The others get turned down.
+let allChannels = []; // array of all channel numbers
+
 $(function() {
 
 
@@ -41,8 +48,8 @@ $(function() {
 
         let now = correctedNow();
         //let now = Date.now();
-        let data = {clienttime: now};
-        message("newchoirmember", data);
+        let data = {clienttime: now, uniqID: uniqID};
+        message("memberstart", data);
         
 
 
@@ -58,10 +65,7 @@ $(function() {
         
         JZZ.synth.Tiny.register('Web Audio');
         tinysynth = JZZ().openMidiOut('Web Audio');
-     //   out = JZZ().or(console.log('Cannot start MIDI engine!')).openMidiOut().or(console.log('Cannot open MIDI Out!'));
-
-
-/*
+     /*
         JZZ.synth.Tiny().noteOn(0, 'C5', 127)
             .wait(500).noteOn(0, 'E5', 127)
             .wait(500).noteOn(0, 'G5', 127)
@@ -87,7 +91,9 @@ $(function() {
     ws.onopen = function() {
         wsready = true;
         console.log("opened " + ws.readyState);
-        message("ready", "READY NOW")
+        let data = {uniqID: uniqID};
+        message("newchoirmember", data);
+     //   message("ready", data);
     };
 
     ws.onerror = function(msg){
@@ -107,10 +113,6 @@ $(function() {
 //        console.log(msg.address);
 console.log(msg);
 
-        // this is the format. Change the messages as needed
-        if(msg.address == "score"){
-            updateScore(msg.data);
-        }
 
         if(msg.address == "playnote"){
             midiMakeNote(msg.data.pitch, msg.data.velocity, msg.data.duration)
@@ -121,8 +123,17 @@ console.log(msg);
         }
 
         if(msg.address == "startplaying"){
-            startMidiFile(msg.data.starttime);
+            if(!playing && msg.data.uniqID == uniqID){
+                startMidiFile(msg.data.starttime);
+            }
+        }
 
+        if(msg.address == "yourchannels"){
+            // getting the list of channels for this player
+            console.log("yourchannels", msg);
+            if(msg.data.uniqID == uniqID){
+                updateChannels(msg.data.channelList, msg.data.allChannels);
+            }
         }
 
         // add message about adding a new instrument here
@@ -167,6 +178,12 @@ function midiMakeNote(pitch, velocity, duration){
 
 }
 
+
+function setMidiVoice(channel, bank, program){
+    // assuming default bank.
+    tinysynth.program(channel, program);
+
+}
 
 function startMidiFile(starttime){
     let waittime = starttime - Date.now();
@@ -215,6 +232,7 @@ function fromURL(starttime) {
 function load(data, name, starttime) {
     console.log("load", name);
     try {
+//        player = JZZ.MIDI.SMF(data).player();
         player = JZZ.MIDI.SMF(data).player();
         player.connect(tinysynth);
         player.connect(function(msg) {
@@ -223,6 +241,7 @@ function load(data, name, starttime) {
         player.onEnd = function() {
             playing = false;
         }
+
         let waittime = starttime - correctedNow();
         if(waittime > 0){
             console.log("waiting");
@@ -231,10 +250,15 @@ function load(data, name, starttime) {
                 player.play();        
             }, waittime);
         }else{
-            let seektime = waittime * -1;
+
+            let seektime = correctedNow()- starttime;
+            console.log("seeking to " + player.ms2tick(seektime));
             playing = true;
-            player.jumpMS(seektime);
             player.play();
+            player.jump(player.ms2tick(seektime));
+            setTimeout(function(){
+             //   player.stop();
+            },1000);
         }
     }
     catch (e) {
@@ -258,6 +282,59 @@ function playStop() {
     }
 }
 
-function midievent(msg){
-    console.log(msg);
+function midievent(midievent){
+    console.log(midievent,
+        midievent.getChannel(), 
+        midievent.getNote(),  
+        midievent.getVelocity(), 
+        midievent.getTempo(), 
+        midievent.getBPM(),
+        midievent.getSysExId(),
+        midievent.getText(),
+        midievent.getData(),
+        midievent.isProgName(),
+        midievent.isFullSysEx(),
+        midievent.isMidi(),
+        midievent.isNoteOn()
+    );
+
+    if( !firstnoteplayed && midievent.isNoteOn()){
+        firstnoteplayed = true;
+        doAtFirstNote();
+    }
+}
+
+function doAtFirstNote(){
+    setupChannelPrograms()
+    setupChannelVolumes();
+}
+
+function updateChannels(_myChannels, _allchannels){
+    myChannels = _myChannels;
+    allChannels = _allchannels;
+    if(playing){
+        setupChannelVolumes();
+    }
+}
+
+function setupChannelPrograms(){
+    tinysynth.program(0, Math.floor(Math.random()* 127));
+    tinysynth.program(1, Math.floor(Math.random()* 127));
+    tinysynth.program(2, Math.floor(Math.random()* 127));
+    tinysynth.program(3, Math.floor(Math.random()* 127));
+    tinysynth.program(4, Math.floor(Math.random()* 127));
+    tinysynth.program(5, Math.floor(Math.random()* 127));
+    tinysynth.program(6, Math.floor(Math.random()* 127));
+    //   out = JZZ().or(console.log('Cannot start MIDI engine!')).openMidiOut().or(console.log('Cannot open MIDI Out!'));
+}
+
+function setupChannelVolumes(){
+    for(var i = 0; i < allChannels.length; i++){
+        let channel = allChannels[i];
+        if(myChannels.includes(channel)){
+            tinysynth.volumeF(channel, 1.0);
+        }else{
+            tinysynth.volumeF(channel, 0.0);
+        }
+    }
 }
