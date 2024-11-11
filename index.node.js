@@ -255,6 +255,7 @@ function routeFromOSC(oscMsg, route, callback){
 
 pareto.iterateRaddecs(500, 10, function(raddecColl){
     console.log("gonna send these raddecs", raddecColl);
+    socket.sendMessage("raddecupdate", raddecColl);
 });
 
 

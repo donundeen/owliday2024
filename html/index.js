@@ -24,15 +24,22 @@ let ws = false;
 let wsready = false;  
 
 
+var screenwidth = (window.innerWidth > 0) ? window.innerWidth : screen.width;
+var screenheight = (window.innerHeight > 0) ? window.innerHeight : screen.height;
+
+
 $(function() {
 
-
+    screenwidth = (window.innerWidth > 0) ? window.innerWidth : screen.width;
+    screenheight = (window.innerHeight > 0) ? window.innerHeight : screen.height;
     
+    /*
     setInterval(function(){
         $(".time2").text(Math.floor(correctedNow() / 1000));
 
     },10);
-    
+    */
+   
     console.log("starting");
 
     // chnage this depending on location of webserver. Figure out a way to make this more dynamic...
@@ -83,7 +90,7 @@ $(function() {
     }
 
     ws.onmessage = function(event) {
-        console.log("got message ", event);
+    //    console.log("got message ", event);
      //   midiMakeNote(64, 127, 500);
         msg = JSON.parse(event.data);
 
@@ -105,11 +112,17 @@ $(function() {
             console.log("yourchannels", msg);
             updateChannels(msg.data.channelList, msg.data.allChannels);
         }
+        if(msg.address == "raddecupdate"){
+            // getting the list of channels for this player
+    //        console.log("raddecupdate", msg.data);
+            updateRaddecs(msg.data);
+        }
 
         // add message about adding a new instrument here
     }
 
 });
+
 
 
 
@@ -273,6 +286,15 @@ function midievent(midievent){
     );
     */
 
+    if(midievent.isNoteOn()){
+        console.log("on", midievent.getChannel(), midievent.getNote());
+        graphicsNoteOn(midievent.getChannel());
+    }
+    if(midievent.isNoteOff()){
+        console.log("off", midievent.getChannel(), midievent.getNote());
+        graphicsNoteOff(midievent.getChannel());
+    }
+
     if( !firstnoteplayed && midievent.isNoteOn()){
         firstnoteplayed = true;
         doAtFirstNote();
@@ -292,6 +314,7 @@ function updateChannels(_myChannels, _allchannels){
         setupChannelVolumes();
     }
     $(".channels").text(JSON.stringify(myChannels, null , "  "));
+    graphicsChannelSetup(myChannels, allChannels);
 }
 
 function setupChannelPrograms(){
@@ -314,4 +337,91 @@ function setupChannelVolumes(){
             tinysynth.volumeF(channel, 0.0);
         }
     }
+}
+
+
+// GRAPHICS stuff
+let raddecElems = {};
+
+function setupGraphics(){
+
+}
+function updateRaddecs(raddecs){
+    // update graphics here. 
+    for(let i = 0; i < raddecs.length; i++){
+        let raddec = raddecs[i];
+        let star = false;
+        if(!raddecElems[raddec.transmitterId]){
+            star = document.createElement("p");
+            star.innerText = "⭐";
+            star.style.position = "absolute";
+            star.style.top = Math.floor(Math.random() * screenheight)+"px";
+            star.style.left = Math.floor(Math.random() * screenwidth)+"px";
+            document.body.appendChild(star);
+            raddecElems[raddec.transmitterId] = star;
+        }else{
+         //   console.log(raddec.transmitterId, "already exists")
+            star = raddecElems[raddec.transmitterId];
+        }
+     //   console.log(raddecElems);
+//        let scaledrssi = dynScale(raddec.rssi, .2, 1);
+        let scaledTiming = dynScale(raddec.rssi, .5, 5);
+//        star.style.opacity = scaledrssi;
+        star.style.animation =  "customAni "+scaledTiming+"s ease 0s infinite normal none";
+
+    }
+}
+
+
+let channelVoiceElems = {};
+function graphicsChannelSetup(channelList, allChannels){
+    console.log(channelList);
+    for(let i = 0; i < channelList.length; i++){
+        let channel = channelList[i];
+        singer = document.createElement("p");
+        singer.innerText = "😐";
+        singer.classList.add("singer");
+        singer.style.position = "absolute";
+        singer.style.top = Math.floor(Math.random() * screenheight)+"px";
+        singer.style.left = Math.floor(Math.random() * screenwidth)+"px";
+        document.body.appendChild(singer);
+        channelVoiceElems[channel] = singer;
+    }
+
+
+}
+
+function graphicsNoteOn(channel){
+//    console.log("on", channel);
+    channelVoiceElems[channel].innerText = "😮";
+
+}
+function graphicsNoteOff(channel){
+  //  console.log("off", channel);
+    channelVoiceElems[channel].innerText = "😐";
+}
+
+
+
+let scalemin = 1000;
+let scalemax = -10000;
+function dynScale(input, outmin, outmax){
+    if(input > scalemax){
+        scalemax = input;
+    }
+    if(input < scalemin){
+        scalemin = input;
+    }
+    let inrange = scalemax - scalemin;
+    let outrange = outmax - outmin;
+
+    let scalefactor = outrange / inrange;
+    let diff = input - scalemin;
+    let difffraction = diff / inrange;
+    let output = difffraction * outrange + outmin;
+//    console.log(input, scalemin, scalemax,output );
+
+    return output
+
+
 }

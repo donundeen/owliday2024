@@ -1,23 +1,23 @@
 let Pareto = {
 
     raddecs: {},
-    raddecKeys: [];
+    raddecKeys: [],
     dyanmbs : {},
-    dynambKeys : [];
+    dynambKeys : [],
     numraddecs : 0,
     numdynambs : 0,
 
     currentRaddecIndex : 0,
     currentDynambIndex : 0,
-    iteratingRaddecs = false,
-    iteratingDynambs = false,
+    iteratingRaddecs : false,
+    iteratingDynambs : false,
 
     init(){
     },
 
     addRaddec(id, rssi){
         this.raddecs[id] = {
-            transmittedId : id, 
+            transmitterId : id, 
             rssi : rssi
         };
         this.raddecKeys = Object.keys(this.raddecs);
@@ -34,21 +34,26 @@ let Pareto = {
 
     },
 
-    iterateRaddecs(intervalMs, numPerIteration, callback){
+    iterateRaddecs(interval, numPerIteration, callback){
         if(this.iteratingRaddecs){
             return;
         }
         this.currentRaddecIndex = 0;
         this.iteratingRaddecs = true;
+        let self = this;
         setInterval(function(){
+            if(self.numraddecs==0){
+                return;
+            }
             let count = 0;
             let raddecColl = [];
             while(count < numPerIteration){
-                if(this.currentRaddecIndex >= this.numraddecs){
-                    this.currentRaddecIndex = 0;
+                if(self.currentRaddecIndex >= self.numraddecs){
+                    self.currentRaddecIndex = 0;
                 }
-                raddecColl.push(this.raddecs[this.raddecKeys[this.currentRaddecIndex]]);
-                this.currentRaddecIndex++;
+                console.log(self.raddecs, self.raddecKeys, self.currentRaddecIndex);
+                raddecColl.push(self.raddecs[self.raddecKeys[self.currentRaddecIndex]]);
+                self.currentRaddecIndex++;
                 count++;
             }
             callback(raddecColl);
