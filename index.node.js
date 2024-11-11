@@ -174,8 +174,6 @@ udpPort.on("message", function (oscMsg) {
         let transmitterId = oscMsg.simpleValue.transmitterId;
         let rssi = oscMsg.simpleValue.rssiSignature[0].rssi;
         rssiMessage(transmitterId, rssi);
-        let value = oscMsg.simpleValue;
-        pareto.addRaddec(transmitterId, rssi);
     });
 
     routeFromOSC(oscMsg, "/pareto/dynamb", function(oscMsg, address){
@@ -189,7 +187,9 @@ udpPort.on("message", function (oscMsg) {
 
 
 function rssiMessage(transmitterId, rssi){
-    console.log("rssi", transmitterId, rssi);
+ //   console.log("rssi", transmitterId, rssi);
+    pareto.addRaddec(transmitterId, rssi);
+
 
 }
 

@@ -39,7 +39,7 @@ $(function() {
 
     },10);
     */
-   
+
     console.log("starting");
 
     // chnage this depending on location of webserver. Figure out a way to make this more dynamic...
@@ -287,11 +287,11 @@ function midievent(midievent){
     */
 
     if(midievent.isNoteOn()){
-        console.log("on", midievent.getChannel(), midievent.getNote());
+//        console.log("on", midievent.getChannel(), midievent.getNote());
         graphicsNoteOn(midievent.getChannel());
     }
     if(midievent.isNoteOff()){
-        console.log("off", midievent.getChannel(), midievent.getNote());
+   //     console.log("off", midievent.getChannel(), midievent.getNote());
         graphicsNoteOff(midievent.getChannel());
     }
 
@@ -391,13 +391,29 @@ function graphicsChannelSetup(channelList, allChannels){
 
 }
 
+let channelsOn = {};
+let  mouths = 0;
 function graphicsNoteOn(channel){
 //    console.log("on", channel);
-    channelVoiceElems[channel].innerText = "😮";
+    mouths++;
+    console.log("on m", mouths);
 
+    if(!channelsOn[channel]){
+        channelsOn[channel] = true;            
+        if(channelVoiceElems[channel].innerText != "😮"){
+            channelVoiceElems[channel].innerText = "😐";
+            setTimeout(function(){
+
+                channelVoiceElems[channel].innerText = "😮";
+            }, 25);
+        }
+    }
 }
 function graphicsNoteOff(channel){
   //  console.log("off", channel);
+    channelsOn[channel] = false;     
+    mouths--;       
+    console.log("off m", mouths);
     channelVoiceElems[channel].innerText = "😐";
 }
 

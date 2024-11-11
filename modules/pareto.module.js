@@ -12,6 +12,21 @@ let Pareto = {
     iteratingRaddecs : false,
     iteratingDynambs : false,
 
+    dynambvals : {},
+
+
+    dynambicons :{
+        acceleration: "🚀",
+        isLiquidDetected: "💧",
+        temperature: "🌡️",
+        relativeHumidity: "💦",
+        illuminance: "☀️",
+        isMotionDetected: "🏃🏻‍♀️",
+        numberOfOccupants:"👪🏽",
+        batteryPercentage: "🔋"
+    }
+
+
     init(){
     },
 
@@ -29,6 +44,8 @@ let Pareto = {
             deviceId : id, 
             data : data
         };        
+        this.dynambvals = {...this.dynambvals , ...data};
+        console.log("new dynamb", this.dynambvals);
         this.dynambKeys = Object.keys(this.dyanmbs);
         this.numdynambs = Object.keys(this.dyanmbs).length;
 
