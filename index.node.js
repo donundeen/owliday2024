@@ -3,7 +3,11 @@
 const SocketServer = require("./modules/socketserver.module.js").SocketServer;
 const MidiParser = require("./modules/midiparser.module.js").MidiParser;
 const Choir = require("./modules/choir.module.js").Choir;
+const Pareto = require("./modules/pareto.module.js").Pareto;
 const db = require('./modules/debugging.module.js').Debugging;
+
+
+
 
 // TURN DEBUGGING ON/OFF HERE
 db.active = true;
@@ -13,10 +17,22 @@ db.log("starting","now",[1,2,3]);
 
 let WEBSOCKET_PORT= 8099;
 let WEBSERVER_PORT = 8082;
+let UDPLISTENPORT = 8089;
 let default_webpage = "index.html";
 
+var osc = require("osc");
+
+var udpPort = new osc.UDPPort({
+    localAddress: "0.0.0.0",
+    localPort: UDPLISTENPORT, // this port for listening
+    broadcast: true,
+    metadata: true
+});
+udpPort.open();
+
+
 let playing = false;
-let scorestartime = 0;
+let scorestarttime = 0;
 
 let parser = Object.create(MidiParser);
 parser.db = db;
@@ -29,7 +45,8 @@ console.log("parser channels",Object.keys(parser.channels) )
 choir.init();
 choir.allChannels = Object.keys(parser.channels);
 
-
+let pareto = Object.create(Pareto);
+pareto.init();
 
 console.log("all midi file channels used ", parser.channels, parser.numChannels);
 
@@ -67,23 +84,21 @@ socket.setMessageReceivedCallback(function(msg, ip){
 
     routeFromWebsocket(msg, ip, "memberstart", function(msg, ip){
         console.log("memberstart", msg);
-        if(scorestartime == 0){
-            let clienttime = msg.clienttime;
-            scorestartime = clienttime + 1000; // wait 5 seconds;
-        }
-        let data ={starttime: scorestartime, uniqID : msg.uniqID};
-        socket.sendMessage("startplaying", data, ip);
-    });
-
-    routeFromWebsocket(msg, ip, "newchoirmember", function(msg, ip){
         console.log("adding member", msg, ip);
         choir.addMember(msg.uniqID, ip);
         choir.distributeChannels();
         sendUpdatedChannels(choir);
         console.log("added member", choir);
+
+        if(scorestarttime == 0){
+            let clienttime = msg.clienttime;
+            scorestarttime = clienttime + 1000; // wait 5 seconds;
+        }
+        let data ={starttime: scorestarttime, uniqID : msg.uniqID};
+        socket.sendMessage("startplaying", data, ip);
     });
 
-    routeFromWebsocket(msg,  ip,"startscore", function(msg){    
+    routeFromWebsocket(msg,  ip, "startscore", function(msg){    
         if(playing){
             return;
         } 
@@ -91,8 +106,7 @@ socket.setMessageReceivedCallback(function(msg, ip){
     });
 
     routeFromWebsocket(msg, ip, "songover", function(msg){
-        playing = false;
-        scorestartime = 0;
+        songOver();
     });
 });
 
@@ -102,10 +116,17 @@ socket.setDisconnectCallback(function(ip){
         choir.distributeChannels();
         sendUpdatedChannels(choir);
     }else{
-        playing = false;
-        starttime = 0;
+        songOver();
     }
 });
+
+
+function songOver(){
+    console.log("song over");
+    playing = false;
+    scorestarttime = 0;
+   
+}
 
 function sendUpdatedChannels(choir){
     choir.allMembersCallback(function(key, member){
@@ -137,6 +158,97 @@ function routeFromWebsocket(msg, ip, route, callback){
         return true;
     }
     return false;
+}
+
+
+// handling messages over OSC/UDP
+udpPort.on("message", function (oscMsg) {
+    // when an OSC messages comes in
+//    console.log("An OSC message just arrived!", oscMsg);
+    // pass the message to the orchestra, which controls all the instruments
+//    orchestra.parseOSC(oscMsg.address, oscMsg.args);
+
+    // announcing local instruments to create them in the orchestra
+    // NOTE: all localInstrument stuff is broken, needs updating
+    routeFromOSC(oscMsg, "/pareto/raddec", function(oscMsg, address){
+        let transmitterId = oscMsg.simpleValue.transmitterId;
+        let rssi = oscMsg.simpleValue.rssiSignature[0].rssi;
+        rssiMessage(transmitterId, rssi);
+        let value = oscMsg.simpleValue;
+        pareto.addRaddec(transmitterId, rssi);
+    });
+
+    routeFromOSC(oscMsg, "/pareto/dynamb", function(oscMsg, address){
+        console.log("dynamb", oscMsg.simpleValue);
+        let deviceId = oscMsg.simpleValue.deviceId;
+        let value = oscMsg.simpleValue;
+        pareto.addDynamb(deviceId, oscMsg.simpleValue);
+    });
+
+});
+
+
+function rssiMessage(transmitterId, rssi){
+    console.log("rssi", transmitterId, rssi);
+
+}
+
+/////////////////////////////////////////
+// routing function for handling all OSC messages
+// oasMsg : osc message, with .address and .args address provided
+// route : string or regex to match the address
+// args: the message content
+// callback function(oscMsg, routematches)
+// -- the orginal OSCMsg, with propery simpleValue added, 
+//    which is the best we could do to get the sent message value as a simple value or JSON array
+// -- the address split into an arrqy on /
+function routeFromOSC(oscMsg, route, callback){
+
+    // get teh OSC value. Need to figure out types here, 
+    let value = oscMsg.args;
+    let newvalue = false;
+/*
+    db.log("got oscMsg " + value, value);
+    db.log(oscMsg);
+    db.log(typeof value);
+*/
+    if(typeof value == "number"){
+        newvalue = value;
+    }else if(Array.isArray(value) && value.length == 1 && Object.hasOwn(value[0], "value")){
+        if(value[0].type == "s"){
+            try{
+                newvalue = JSON.parse(value[0].value);
+            }catch(e){
+                newvalue = value[0].value;
+            }
+        }else{
+            newvalue = value[0].value;
+        }
+    }else if(Array.isArray(value) && value.length > 1 && Object.hasOwn(value[0], "value")){
+        newvalue = [];
+        for(let i = 0; i < value.length; i++){
+            if(value[0].type == "s"){
+                try{
+                    newvalue[i] = JSON.parse(value[i].value);
+                }catch(e){
+                    newvalue[i] = value[i].value;
+                }
+            }else{
+                newvalue[i] = value[i].value;
+            }
+        }
+    }else{
+        db.log("!!!!!!!!!!!!!! ");
+        db.log("don't know what value is " + Array.isArray(value) + " : " + value.length + " type :" + typeof value);
+    }
+
+    oscMsg.simpleValue = newvalue;
+
+    let matches = oscMsg.address.match(route);
+    if(matches){
+        let split = oscMsg.address.split("/");
+        callback(oscMsg, split);
+    }
 }
 
 // start the socket server and the web server

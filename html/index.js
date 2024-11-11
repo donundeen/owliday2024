@@ -20,6 +20,10 @@ let uniqID = Math.random() * 10000 * Date.now();
 let myChannels = []; // array of channel numbers that I'm playing. The others get turned down.
 let allChannels = []; // array of all channel numbers
 
+let ws = false;
+let wsready = false;  
+
+
 $(function() {
 
 
@@ -41,58 +45,30 @@ $(function() {
     $(".play").on("click", function(){
 
         if(started){
+            // shuffle the instrument choices.
+            setupChannelPrograms();
             return;
         }
         console.log("starting");
         started = true;
 
         let now = correctedNow();
-        //let now = Date.now();
         let data = {clienttime: now, uniqID: uniqID};
         message("memberstart", data);
         
-
-
-        /*
-        setInterval(function(){
-            midiMakeNote(Math.floor(Math.random() * 24) + 64, 127, 500);
-
-        },200)
-        */
-//        message("startscore", true);
-
-
-        
         JZZ.synth.Tiny.register('Web Audio');
         tinysynth = JZZ().openMidiOut('Web Audio');
-     /*
-        JZZ.synth.Tiny().noteOn(0, 'C5', 127)
-            .wait(500).noteOn(0, 'E5', 127)
-            .wait(500).noteOn(0, 'G5', 127)
-            .wait(500).noteOff(0, 'C5').noteOff(0, 'E5').noteOff(0, 'G5');
-            */
-//        fromURL();
 
     });
 
+    ws = new WebSocket('ws://'+host+':'+WEBSOCKET_PORT);
 
-    // some note characters: 
-    // ♭ 𝅘𝅥𝅮𝅗𝅥°♭𝅘𝅥𝅗𝅥𝅗 𝄼 𝄽 
-
-    //  const ws = new WebSocket('ws://localhost:8080');
-    //const ws = new WebSocket('ws://192.168.4.34:8080');
-    //const ws = new WebSocket('ws://10.102.134.110:8080');
-    const ws = new WebSocket('ws://'+host+':'+WEBSOCKET_PORT);
-
-    let wsready = false;  
     // Browser WebSockets have slightly different syntax than `ws`.
     // Instead of EventEmitter syntax `on('open')`, you assign a callback
     // to the `onopen` property.
     ws.onopen = function() {
         wsready = true;
         console.log("opened " + ws.readyState);
-        let data = {uniqID: uniqID};
-        message("newchoirmember", data);
      //   message("ready", data);
     };
 
@@ -110,9 +86,6 @@ $(function() {
         console.log("got message ", event);
      //   midiMakeNote(64, 127, 500);
         msg = JSON.parse(event.data);
-//        console.log(msg.address);
-console.log(msg);
-
 
         if(msg.address == "playnote"){
             midiMakeNote(msg.data.pitch, msg.data.velocity, msg.data.duration)
@@ -123,38 +96,36 @@ console.log(msg);
         }
 
         if(msg.address == "startplaying"){
-            if(!playing && msg.data.uniqID == uniqID){
-                startMidiFile(msg.data.starttime);
-            }
+            console.log("startingplaing", msg.data);
+            startMidiFile(msg.data.starttime);
         }
 
         if(msg.address == "yourchannels"){
             // getting the list of channels for this player
             console.log("yourchannels", msg);
-            if(msg.data.uniqID == uniqID){
-                updateChannels(msg.data.channelList, msg.data.allChannels);
-            }
+            updateChannels(msg.data.channelList, msg.data.allChannels);
         }
 
         // add message about adding a new instrument here
     }
 
-    function message(address, data){
-
-        let msg = {address : address,
-            data: data};  
-
-        console.log("sending message ", msg);
-        if(wsready){
-        //    var buf = new Buffer.from(JSON.stringify(msg));
-            ws.send(JSON.stringify(msg));
-        }else{
-            console.log("ws not ready");
-        }
-    }
-
 });
 
+
+
+function message(address, data){
+
+    let msg = {address : address,
+        data: data};  
+
+    console.log("sending message ", address, msg);
+    if(wsready){
+    //    var buf = new Buffer.from(JSON.stringify(msg));
+        ws.send(JSON.stringify(msg));
+    }else{
+        console.log("ws not ready");
+    }
+}
 
 
 function correctedNow(){
@@ -230,7 +201,7 @@ function fromURL(starttime) {
 }
 
 function load(data, name, starttime) {
-    console.log("load", name);
+    console.log("load", name, starttime);
     try {
 //        player = JZZ.MIDI.SMF(data).player();
         player = JZZ.MIDI.SMF(data).player();
@@ -239,7 +210,9 @@ function load(data, name, starttime) {
             midievent(msg);
         });      
         player.onEnd = function() {
+            console.log("sending song over");
             playing = false;
+            message("songover", true);
         }
 
         let waittime = starttime - correctedNow();
@@ -283,6 +256,7 @@ function playStop() {
 }
 
 function midievent(midievent){
+    /*
     console.log(midievent,
         midievent.getChannel(), 
         midievent.getNote(),  
@@ -297,6 +271,7 @@ function midievent(midievent){
         midievent.isMidi(),
         midievent.isNoteOn()
     );
+    */
 
     if( !firstnoteplayed && midievent.isNoteOn()){
         firstnoteplayed = true;
@@ -310,6 +285,7 @@ function doAtFirstNote(){
 }
 
 function updateChannels(_myChannels, _allchannels){
+    console.log("updateChannels", _myChannels);
     myChannels = _myChannels;
     allChannels = _allchannels;
     if(playing){
@@ -319,9 +295,9 @@ function updateChannels(_myChannels, _allchannels){
 }
 
 function setupChannelPrograms(){
-    tinysynth.program(0, Math.floor(Math.random()* 127));
-    tinysynth.program(1, Math.floor(Math.random()* 127));
-    tinysynth.program(2, Math.floor(Math.random()* 127));
+    tinysynth.program(0, Math.floor(Math.random()* 120));
+    tinysynth.program(1, Math.floor(Math.random()* 120));
+    tinysynth.program(2, Math.floor(Math.random()* 120));
     tinysynth.program(3, Math.floor(Math.random()* 127));
     tinysynth.program(4, Math.floor(Math.random()* 127));
     tinysynth.program(5, Math.floor(Math.random()* 127));

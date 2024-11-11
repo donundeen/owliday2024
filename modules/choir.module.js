@@ -2,14 +2,13 @@ let Choir = {
     members : {},
     allChannels : [],
 
-
     init(){
         this.members = {};
         this.allChannels = [];
     },
 
-
     hasMembers(){
+        console.log("hasMbmebers?", Object.keys(this.members).length)
         if(Object.keys(this.members).length > 0){
             return true;
         }
@@ -22,7 +21,6 @@ let Choir = {
         for(let i = 0; i < memberkeys.length; i++){
             member = this.members[memberkeys[i]];
             callback(memberkeys[i], member);
-
         }        
     },
 
