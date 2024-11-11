@@ -193,6 +193,8 @@ function rssiMessage(transmitterId, rssi){
 
 }
 
+
+
 /////////////////////////////////////////
 // routing function for handling all OSC messages
 // oasMsg : osc message, with .address and .args address provided
@@ -250,6 +252,11 @@ function routeFromOSC(oscMsg, route, callback){
         callback(oscMsg, split);
     }
 }
+
+pareto.iterateRaddecs(500, 10, function(raddecColl){
+    console.log("gonna send these raddecs", raddecColl);
+});
+
 
 // start the socket server and the web server
 socket.startSocketServer();
