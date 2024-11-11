@@ -2,7 +2,7 @@ let Pareto = {
 
     raddecs: {},
     raddecKeys: [],
-    dyanmbs : {},
+    dynambs : {},
     dynambKeys : [],
     numraddecs : 0,
     numdynambs : 0,
@@ -24,7 +24,7 @@ let Pareto = {
         isMotionDetected: "🏃🏻‍♀️",
         numberOfOccupants:"👪🏽",
         batteryPercentage: "🔋"
-    }
+    },
 
 
     init(){
@@ -40,7 +40,7 @@ let Pareto = {
     },
 
     addDynamb(id, data){
-        this.dyanmbs[id] = {
+        this.dynambs[id] = {
             deviceId : id, 
             data : data
         };        
@@ -75,10 +75,6 @@ let Pareto = {
             callback(raddecColl);
         }, interval);
     },
-
-
-
-
 }
 
 exports.Pareto = Pareto;

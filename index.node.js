@@ -259,6 +259,18 @@ pareto.iterateRaddecs(500, 10, function(raddecColl){
 });
 
 
+// there aren't that many dynambs usually, so we'll send them all each time.
+setInterval(function(){
+    let data = {
+        dynambvals : pareto.dynambvals,
+        dynambicons: pareto.dynambicons
+    };
+    socket.sendMessage("dynambupdate", data);
+
+}, 2000);
+
+
+
 // start the socket server and the web server
 socket.startSocketServer();
 socket.startWebServer();

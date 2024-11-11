@@ -23,9 +23,18 @@ let allChannels = []; // array of all channel numbers
 let ws = false;
 let wsready = false;  
 
+var singerOrigWidth = 160;
+var singerOrigHeight = 160;
 
 var screenwidth = (window.innerWidth > 0) ? window.innerWidth : screen.width;
 var screenheight = (window.innerHeight > 0) ? window.innerHeight : screen.height;
+
+var singerWidth = Math.floor(screenwidth / 6);
+var singerRatio = singerWidth / singerOrigWidth;
+var singerHeight =  singerOrigHeight * singerRatio;
+
+var singerSafeScreenWidth = screenwidth - singerWidth;
+var singerSafeScreenHeight = screenheight - singerHeight;
 
 
 $(function() {
@@ -116,6 +125,9 @@ $(function() {
             // getting the list of channels for this player
     //        console.log("raddecupdate", msg.data);
             updateRaddecs(msg.data);
+        }
+        if(msg.address == "dynambupdate"){
+            updateDynambs(msg.data);
         }
 
         // add message about adding a new instrument here
@@ -306,6 +318,10 @@ function doAtFirstNote(){
     setupChannelVolumes();
 }
 
+
+
+
+
 function updateChannels(_myChannels, _allchannels){
     console.log("updateChannels", _myChannels);
     myChannels = _myChannels;
@@ -374,21 +390,121 @@ function updateRaddecs(raddecs){
 
 
 let channelVoiceElems = {};
+let dynambicons = false;
+let channeldynambs = {};// tracking which channels have which dynambs already.
+
+function updateDynambs(data){
+    dynambicons = data.dynambicons;
+    let dynambvals = data.dynambvals;
+    // assigne the dynamb values to the singers, until all are used up and every singer has one.
+    let dynambkeys = Object.keys(dynambvals);
+    let numdynambkeys = dynambkeys.length;
+    let channelkeys = Object.keys(channelVoiceElems);
+    let numchannels = channelkeys.length;
+    if(numchannels == 0 || numdynambkeys == 0){
+        return;
+    }
+    let di = 0;
+    let ci = 0;
+    for(let i = 0; i < numchannels; i++){
+        let channelelem = channelVoiceElems[channelkeys[i]];
+        channelelem[0].dynambs = [];
+    }
+    while(di < numdynambkeys || ci < numchannels){
+        let dynamb = dynambkeys[di % numdynambkeys];
+        let channelelem = channelVoiceElems[channelkeys[ci % numchannels]];
+//        console.log(channelelem);
+        channelelem[0].dynambs.push(dynamb);
+        di++;
+        ci++;
+    }
+    graphicsPlaceDynambs(dynambvals);
+}
+
+function graphicsPlaceDynambs(dynambs){
+    console.log("graphicsPlaceDynambs", dynambs);
+
+    let dynambkeys = Object.keys(dynambs);
+    let numdynambkeys = dynambkeys.length;
+
+    let channelkeys = Object.keys(channelVoiceElems);
+    let numchannels = channelkeys.length;
+
+    for(let i = 0; i < numchannels; i++){
+        console.log("i",i);
+        let channelelem = channelVoiceElems[channelkeys[i]];
+        let singer = channelelem[0];
+        let singerdynambs= singer.dynambs;
+        let singerleft = parseInt(singer.style.left.replace("px",""));
+        let singertop = parseInt(singer.style.top.replace("px",""));
+        if(!dynambs){
+            return;
+        }
+        for(let j = 0; j < numdynambkeys; j++){
+            let sposx = Math.floor(
+                singerleft + (singerWidth / 2)
+                )
+                + Math.floor(
+                        (Math.random() * singerWidth)
+                        - (singerWidth / 2) 
+                    );
+            let sposy = Math.floor(
+                singertop + (singerHeight / 2)
+                )
+                + Math.floor(
+                        (Math.random() * singerHeight)
+                        - (singerHeight / 2) 
+                    );                    
+            dynambicon = dynambicons[dynambkeys[j]];
+            if(typeof dynambicon == "undefined"){
+                console.log(typeof dynambicon, "returning");
+                continue;
+            }
+            iconelem = document.createElement("p");
+            iconelem.innerText = dynambicon;
+            iconelem.style.position = "absolute";
+            iconelem.style.left = sposx;
+            iconelem.style.top = sposy;
+            console.log("dynambicon", dynambicon, singerWidth, singerHeight, singerleft, singertop, singer.style.left, singer.style.top, sposx, sposy);
+
+            document.body.appendChild(iconelem);            
+            
+        }
+    }
+}
+
 function graphicsChannelSetup(channelList, allChannels){
     console.log(channelList);
     for(let i = 0; i < channelList.length; i++){
         let channel = channelList[i];
+        singer = [];
+        singer[0]= document.createElement("img");
+        singer[1]= document.createElement("img");
+        singer[0].setAttribute("src", "images/JPActiveOpen160.png");
+        singer[1].setAttribute("src", "images/JPActive160.png");
+        singer[0].setAttribute("width", singerWidth);
+        singer[1].setAttribute("width", singerWidth);
+        /*
         singer = document.createElement("p");
         singer.innerText = "😐";
-        singer.classList.add("singer");
-        singer.style.position = "absolute";
-        singer.style.top = Math.floor(Math.random() * screenheight)+"px";
-        singer.style.left = Math.floor(Math.random() * screenwidth)+"px";
-        document.body.appendChild(singer);
+        */
+        singer[0].classList.add("singer");
+        singer[1].classList.add("singer");
+        singer[0].style.position = "absolute";
+        singer[1].style.position = "absolute";
+        let posleft =  Math.floor(Math.random() * singerSafeScreenWidth)+"px"; 
+        let postop = Math.floor(Math.random() * singerSafeScreenHeight)+"px";
+        singer[0].style.top = postop;
+        singer[1].style.top = postop;
+        singer[0].style.left = posleft;
+        singer[1].style.left = posleft;
+
+
+        document.body.appendChild(singer[0]);
+        document.body.appendChild(singer[1]);
         channelVoiceElems[channel] = singer;
+        
     }
-
-
 }
 
 let channelsOn = {};
@@ -396,15 +512,19 @@ let  mouths = 0;
 function graphicsNoteOn(channel){
 //    console.log("on", channel);
     mouths++;
-    console.log("on m", mouths);
+//    console.log("on m", mouths);
 
     if(!channelsOn[channel]){
         channelsOn[channel] = true;            
-        if(channelVoiceElems[channel].innerText != "😮"){
-            channelVoiceElems[channel].innerText = "😐";
-            setTimeout(function(){
+//        if(channelVoiceElems[channel].innerText != "😮"){
+        if(channelVoiceElems[channel][1].style.display != "none"){
+            channelVoiceElems[channel][1].style.display = "block";
 
-                channelVoiceElems[channel].innerText = "😮";
+//            channelVoiceElems[channel].innerText = "😐";
+            setTimeout(function(){
+                channelVoiceElems[channel][1].style.display = "none";
+
+//                channelVoiceElems[channel].innerText = "😮";
             }, 25);
         }
     }
@@ -413,8 +533,9 @@ function graphicsNoteOff(channel){
   //  console.log("off", channel);
     channelsOn[channel] = false;     
     mouths--;       
-    console.log("off m", mouths);
-    channelVoiceElems[channel].innerText = "😐";
+//    channelVoiceElems[channel].innerText = "😐";
+    channelVoiceElems[channel][1].style.display = "block";
+
 }
 
 
