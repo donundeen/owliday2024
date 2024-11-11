@@ -51,7 +51,6 @@ let Pareto = {
                 if(self.currentRaddecIndex >= self.numraddecs){
                     self.currentRaddecIndex = 0;
                 }
-                console.log(self.raddecs, self.raddecKeys, self.currentRaddecIndex);
                 raddecColl.push(self.raddecs[self.raddecKeys[self.currentRaddecIndex]]);
                 self.currentRaddecIndex++;
                 count++;
