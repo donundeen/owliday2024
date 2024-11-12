@@ -393,15 +393,37 @@ let channelVoiceElems = {};
 let dynambicons = false;
 let channeldynambs = {};// tracking which channels have which dynambs already.
 
-function updateDynambs(data){
-    dynambicons = data.dynambicons;
-    let dynambvals = data.dynambvals;
-    // assigne the dynamb values to the singers, until all are used up and every singer has one.
-    let dynambkeys = Object.keys(dynambvals);
+function gatherDynambs(data){
+    console.log("gatehr" , data);
+    
+    // put dynamb data into something a bit easier to manage
+    let dynambs = data.dynambs;
+    let dynamblist = [];
+    let dynambkeys = Object.keys(dynambs);
     let numdynambkeys = dynambkeys.length;
+    let iconKeys = Object.keys(data.dynambicons);
+    for (let i = 0; i<numdynambkeys; i++){
+        let dynamb = dynambs[dynambkeys[i]];
+        console.log(dynamb);
+        let thisdynambkeys = Object.keys(dynamb.data);
+        thisdynambkeys = thisdynambkeys.filter(d=>iconKeys.includes(d));
+        for(let j = 0; j < thisdynambkeys.length; j++){
+            dynamblist.push({
+                    id: dynamb.deviceId,
+                    text: thisdynambkeys[j],
+                    icon: data.dynambicons[thisdynambkeys[j]] });
+        }
+    }
+    return dynamblist;
+}
+
+function updateDynambs(data){
+    let dynamblist = gatherDynambs(data);
+    console.log(dynamblist);
+    let dynambicons = data.dynambicons;
     let channelkeys = Object.keys(channelVoiceElems);
     let numchannels = channelkeys.length;
-    if(numchannels == 0 || numdynambkeys == 0){
+    if(numchannels == 0 || dynamblist.length == 0){
         return;
     }
     let di = 0;
@@ -410,61 +432,69 @@ function updateDynambs(data){
         let channelelem = channelVoiceElems[channelkeys[i]];
         channelelem[0].dynambs = [];
     }
-    while(di < numdynambkeys || ci < numchannels){
-        let dynamb = dynambkeys[di % numdynambkeys];
+    while(di < dynamblist.length || ci < numchannels){
+        let dynamb = dynamblist[di % dynamblist.length];
         let channelelem = channelVoiceElems[channelkeys[ci % numchannels]];
 //        console.log(channelelem);
         channelelem[0].dynambs.push(dynamb);
         di++;
         ci++;
     }
-    graphicsPlaceDynambs(dynambvals);
+    graphicsPlaceDynambs(dynamblist);
 }
 
-function graphicsPlaceDynambs(dynambs){
-    console.log("graphicsPlaceDynambs", dynambs);
-
-    let dynambkeys = Object.keys(dynambs);
-    let numdynambkeys = dynambkeys.length;
+function graphicsPlaceDynambs(dynamblist){
+    console.log("graphicsPlaceDynambs");
 
     let channelkeys = Object.keys(channelVoiceElems);
     let numchannels = channelkeys.length;
 
     for(let i = 0; i < numchannels; i++){
-        console.log("i",i);
         let channelelem = channelVoiceElems[channelkeys[i]];
         let singer = channelelem[0];
-        let singerdynambs= singer.dynambs;
+        if(!singer.iconlist){
+            singer.iconlist = [];
+        }
+        let singerdynambs = singer.dynambs;
         let singerleft = parseInt(singer.style.left.replace("px",""));
         let singertop = parseInt(singer.style.top.replace("px",""));
-        if(!dynambs){
-            return;
-        }
-        for(let j = 0; j < numdynambkeys; j++){
-            let sposx = Math.floor(
+
+        for(let j = 0; j < singerdynambs.length; j++){
+            let singerdynamb = singerdynambs[j];
+            console.log(singerdynamb);
+            let iconid = "icon"+singerdynamb.id+singerdynamb.text;
+            if(singer.iconlist.includes(iconid)){
+                continue;
+            }
+            singer.iconlist.push(iconid);
+            let singercenterx = Math.floor(
                 singerleft + (singerWidth / 2)
+                );
+            let singercentery = Math.floor(
+                singertop + (singerHeight / 2)
                 )
+            let sposx = singercenterx
                 + Math.floor(
                         (Math.random() * singerWidth)
                         - (singerWidth / 2) 
                     );
-            let sposy = Math.floor(
-                singertop + (singerHeight / 2)
-                )
+            let sposy = singercentery
                 + Math.floor(
                         (Math.random() * singerHeight)
                         - (singerHeight / 2) 
                     );                    
-            dynambicon = dynambicons[dynambkeys[j]];
-            if(typeof dynambicon == "undefined"){
-                console.log(typeof dynambicon, "returning");
-                continue;
-            }
+            dynambicon = singerdynamb.icon;
             iconelem = document.createElement("p");
+            iconelem.classList.add("dynambicon");
+            iconelem.setAttribute("id",iconid);
             iconelem.innerText = dynambicon;
             iconelem.style.position = "absolute";
             iconelem.style.left = sposx;
             iconelem.style.top = sposy;
+//            let transform = singercenterx+"px "+singercentery+"px";
+            let transform = (singercenterx - sposx).toString()+"px "+(singercentery - sposy).toString()+"px";
+            console.log("transform", singercenterx, singercentery, sposx, sposy, singerleft, singertop, transform);
+            iconelem.style["transform-origin"] = transform;
             console.log("dynambicon", dynambicon, singerWidth, singerHeight, singerleft, singertop, singer.style.left, singer.style.top, sposx, sposy);
 
             document.body.appendChild(iconelem);            

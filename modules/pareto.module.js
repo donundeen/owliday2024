@@ -46,8 +46,8 @@ let Pareto = {
         };        
         this.dynambvals = {...this.dynambvals , ...data};
         console.log("new dynamb", this.dynambvals);
-        this.dynambKeys = Object.keys(this.dyanmbs);
-        this.numdynambs = Object.keys(this.dyanmbs).length;
+        this.dynambKeys = Object.keys(this.dynambs);
+        this.numdynambs = Object.keys(this.dynambs).length;
 
     },
 

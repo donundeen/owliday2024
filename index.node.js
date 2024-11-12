@@ -263,6 +263,7 @@ pareto.iterateRaddecs(500, 10, function(raddecColl){
 setInterval(function(){
     let data = {
         dynambvals : pareto.dynambvals,
+        dynambs : pareto.dynambs,
         dynambicons: pareto.dynambicons
     };
     socket.sendMessage("dynambupdate", data);

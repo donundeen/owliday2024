@@ -1,0 +1,14 @@
+[Unit]
+Description=service to run the pikioskwebpage web app
+Documentation=https://github.com/donundeen/owliday2024
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/var/run/owliday2024.pid
+Restart=on-failure
+RestartSec=4
+ExecStart=/home/pi/owliday2024/system/runowliday2024.sh
+
+[Install]
+WantedBy=default.target
