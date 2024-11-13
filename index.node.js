@@ -45,6 +45,9 @@ let WEBSERVER_PORT = 8082;
 let UDPLISTENPORT = 8089; // I've nset up a node-RED implementaiton that spews out /pareto/raddec and /pareto/dynamb json
 let default_webpage = "index.html";
 
+
+/*
+// not using osc/udp anymore
 var osc = require("osc");
 var udpPort = new osc.UDPPort({
     localAddress: "0.0.0.0",
@@ -53,7 +56,7 @@ var udpPort = new osc.UDPPort({
     metadata: true
 });
 udpPort.open();
-
+*/
 
 let playing = false;
 let scorestarttime = 0;
@@ -185,31 +188,7 @@ function routeFromWebsocket(msg, ip, route, callback){
 }
 
 
-// handling messages over OSC/UDP
-udpPort.on("message", function (oscMsg) {
-    // when an OSC messages comes in
-//    console.log("An OSC message just arrived!", oscMsg);
-    // pass the message to the orchestra, which controls all the instruments
-//    orchestra.parseOSC(oscMsg.address, oscMsg.args);
 
-    // announcing local instruments to create them in the orchestra
-    // NOTE: all localInstrument stuff is broken, needs updating
-    /*
-    routeFromOSC(oscMsg, "/pareto/raddec", function(oscMsg, address){
-        let transmitterId = oscMsg.simpleValue.transmitterId;
-        let rssi = oscMsg.simpleValue.rssiSignature[0].rssi;
-        rssiMessage(transmitterId, rssi);
-    });
-
-    routeFromOSC(oscMsg, "/pareto/dynamb", function(oscMsg, address){
-        console.log("dynamb", oscMsg.simpleValue);
-        let deviceId = oscMsg.simpleValue.deviceId;
-        let value = oscMsg.simpleValue;
-        pareto.addDynamb(deviceId, oscMsg.simpleValue);
-    });
-    */
-
-});
 
 paretoclient.on("raddec", (raddec) => { 
     console.log("raddec", raddec);
@@ -220,7 +199,7 @@ paretoclient.on("raddec", (raddec) => {
 
 });
 paretoclient.on("dynamb", (dynamb) => { 
-    console.log("dynamb", raddec);
+    console.log("dynamb", dynamb);
     let deviceId = dynamb.deviceId;
     let value = dynamb;
     pareto.addDynamb(deviceId,dynamb);
