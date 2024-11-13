@@ -6,8 +6,6 @@ const socket = io("http://localhost:3001");
 socket.on("connect", () => {
     console.log(socket.id); // x8WIv7-mJelg7on_ALbx
 
-    socket.on("data", () => { console.log("data");});
-
   });
   
   socket.on("disconnect", () => {
@@ -24,6 +22,6 @@ socket.on("connect", () => {
     }
   });
 
-//  socket.on("data", () => { console.log("data");});
+  socket.on("raddec", (raddec) => { console.log("raddec", raddec);});
 
 
