@@ -191,15 +191,11 @@ function routeFromWebsocket(msg, ip, route, callback){
 
 
 paretoclient.on("raddec", (raddec) => { 
-    console.log("raddec", raddec);
     let transmitterId = raddec.transmitterId;
     let rssi =raddec.rssiSignature[0].rssi;
     rssiMessage(transmitterId, rssi);
-
-
 });
 paretoclient.on("dynamb", (dynamb) => { 
-    console.log("dynamb", dynamb);
     let deviceId = dynamb.deviceId;
     let value = dynamb;
     pareto.addDynamb(deviceId,dynamb);
