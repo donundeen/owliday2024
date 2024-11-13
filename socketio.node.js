@@ -1,6 +1,6 @@
 const { io } = require("socket.io-client");
 
-const socket = io("http://localhost:3001");
+const socket = io("http://10.0.0.200:3001");
 
 // client-side
 socket.on("connect", () => {
@@ -23,5 +23,6 @@ socket.on("connect", () => {
   });
 
   socket.on("raddec", (raddec) => { console.log("raddec", raddec);});
+  socket.on("dynamb", (raddec) => { console.log("raddec", raddec);});
 
 
