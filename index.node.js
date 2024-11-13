@@ -17,7 +17,7 @@ db.log("starting","now",[1,2,3]);
 
 let WEBSOCKET_PORT= 8099;
 let WEBSERVER_PORT = 8082;
-let UDPLISTENPORT = 8089;
+let UDPLISTENPORT = 8089; // I've nset up a node-RED implementaiton that spews out /pareto/raddec and /pareto/dynamb json
 let default_webpage = "index.html";
 
 var osc = require("osc");
