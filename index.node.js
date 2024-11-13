@@ -7,6 +7,31 @@ const Pareto = require("./modules/pareto.module.js").Pareto;
 const db = require('./modules/debugging.module.js').Debugging;
 
 
+let PARETO_IP = "10.0.0.200";
+let PARETO_PORT = "3001";
+
+const { io } = require("socket.io-client");
+const paretoclient = io("http://"+PARETO_IP+":"+PARETO_PORT);
+// client-side
+paretoclient.on("connect", () => {
+    console.log("socketio connect ", socket.id); // x8WIv7-mJelg7on_ALbx
+});
+  
+paretoclient.on("disconnect", () => {
+  console.log("socketio disconnect", socket.id); // undefined
+});
+
+paretoclient.on("connect_error", (error) => {
+  if (socket.active) {
+    // temporary failure, the socket will automatically try to reconnect
+    } else {
+        // the connection was denied by the server
+        // in that case, `socket.connect()` must be manually called in order to reconnect
+        console.log("socketio connect error " ,error.message);
+    }
+});
+
+
 
 
 // TURN DEBUGGING ON/OFF HERE
@@ -21,7 +46,6 @@ let UDPLISTENPORT = 8089; // I've nset up a node-RED implementaiton that spews o
 let default_webpage = "index.html";
 
 var osc = require("osc");
-
 var udpPort = new osc.UDPPort({
     localAddress: "0.0.0.0",
     localPort: UDPLISTENPORT, // this port for listening
@@ -170,6 +194,7 @@ udpPort.on("message", function (oscMsg) {
 
     // announcing local instruments to create them in the orchestra
     // NOTE: all localInstrument stuff is broken, needs updating
+    /*
     routeFromOSC(oscMsg, "/pareto/raddec", function(oscMsg, address){
         let transmitterId = oscMsg.simpleValue.transmitterId;
         let rssi = oscMsg.simpleValue.rssiSignature[0].rssi;
@@ -182,8 +207,26 @@ udpPort.on("message", function (oscMsg) {
         let value = oscMsg.simpleValue;
         pareto.addDynamb(deviceId, oscMsg.simpleValue);
     });
+    */
 
 });
+
+paretoclient.on("raddec", (raddec) => { 
+    console.log("raddec", raddec);
+    let transmitterId = raddec.transmitterId;
+    let rssi =raddec.rssiSignature[0].rssi;
+    rssiMessage(transmitterId, rssi);
+
+
+});
+paretoclient.on("dynamb", (dynamb) => { 
+    console.log("dynamb", raddec);
+    let deviceId = dynamb.deviceId;
+    let value = dynamb;
+    pareto.addDynamb(deviceId,dynamb);
+
+});
+
 
 
 function rssiMessage(transmitterId, rssi){
