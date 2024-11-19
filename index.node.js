@@ -87,13 +87,6 @@ socket.db = db;
 socket.setMessageReceivedCallback(function(msg, ip){
 
     console.log("messageReveived", msg, ip);
-    // this is the format for handling messages.
-    // getscore ask for the contents and name of the current score
-    routeFromWebsocket(msg, ip, "getscore", function(msg){     
-        let data = {scorename : score.scoreFilename,
-                text: score.scoreText};
-        socket.sendMessage("score", parser.parsedFile);    
-    });
 
     routeFromWebsocket(msg, ip, "gettime", function(msg){
         console.log("gettime", msg);

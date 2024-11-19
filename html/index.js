@@ -36,6 +36,48 @@ var singerHeight =  singerOrigHeight * singerRatio;
 var singerSafeScreenWidth = screenwidth - singerWidth;
 var singerSafeScreenHeight = screenheight - singerHeight;
 
+var singerspots = [
+    [],[],[],[],[],[], // 0-5
+    [],[],[],[],[],[], // 6-11
+    [],[],[],[],[],[], // 12-17
+    [],[],[],[],[],[], // 18-23
+    [],[],[],[],[],[], // 24-29
+    [],[],[],[],[],[]
+]; // 30-35
+/*
+0  1  2  3  4  5
+6  7  8  9  10 11
+12 13 14 15 16 17
+18 19 20 21 22 23
+24 25 26 27 28 29
+*/
+// order
+// 14, 15, 20, 21, 13,16
+let singerspotorder = [
+    14,15,20,21,13,16,8,9,19,22,26,27,7,10,25,28,2,3,32,33,12,17,18,23,1,4,31,34,6,11,24,29,0,5,30,35
+];
+
+
+var numsingerrows = Math.floor(screenheight / singerHeight);
+var numsingercols = Math.floor(screenwidth / singerWidth);
+for(var row = 0; row< numsingerrows; row++){
+    var y = row * singerHeight;
+    var spoti = 0;
+    for(var col = 0; col < numsingercols; col++){
+        var x = col * singerWidth;
+        singerspots[spoti] = [x,y];
+        spoti++;
+    }
+}
+// create the order of spots
+
+
+var singerimages = [
+    // open-mouth image first.
+    ["images/JPActiveOpen160.png","images/JPActive160.png"],
+    ["images/JewelActiveOpen160.png","images/JewelActive160.png"]
+
+]
 
 $(function() {
 
@@ -505,13 +547,15 @@ function graphicsPlaceDynambs(dynamblist){
 
 function graphicsChannelSetup(channelList, allChannels){
     console.log(channelList);
+    let singerindex = 0;
     for(let i = 0; i < channelList.length; i++){
         let channel = channelList[i];
+        singerimage = singerimages[singerindex % singerimages.length];
         singer = [];
         singer[0]= document.createElement("img");
         singer[1]= document.createElement("img");
-        singer[0].setAttribute("src", "images/JPActiveOpen160.png");
-        singer[1].setAttribute("src", "images/JPActive160.png");
+        singer[0].setAttribute("src", singerimage[0]);
+        singer[1].setAttribute("src", singerimage[1]);
         singer[0].setAttribute("width", singerWidth);
         singer[1].setAttribute("width", singerWidth);
         /*
@@ -522,8 +566,19 @@ function graphicsChannelSetup(channelList, allChannels){
         singer[1].classList.add("singer");
         singer[0].style.position = "absolute";
         singer[1].style.position = "absolute";
-        let posleft =  Math.floor(Math.random() * singerSafeScreenWidth)+"px"; 
-        let postop = Math.floor(Math.random() * singerSafeScreenHeight)+"px";
+
+//        let posleft =  Math.floor(Math.random() * singerSafeScreenWidth)+"px"; 
+//        let postop = Math.floor(Math.random() * singerSafeScreenHeight)+"px";
+        let posleft =  Math.floor( singerSafeScreenWidth / 2) - (singerWidth / 2)+"px"; 
+        let postop = Math.floor(singerSafeScreenHeight / 2) - (singerHeight / 2)+"px";
+
+        // arrange in a pyramid
+        if(channelList.length == 1){
+            let posleft =  Math.floor( singerSafeScreenWidth / 2) - (singerWidth / 2)+"px"; 
+            let postop = Math.floor(singerSafeScreenHeight / 2) - (singerHeight / 2)+"px";
+        }
+
+
         singer[0].style.top = postop;
         singer[1].style.top = postop;
         singer[0].style.left = posleft;
@@ -533,6 +588,8 @@ function graphicsChannelSetup(channelList, allChannels){
         document.body.appendChild(singer[0]);
         document.body.appendChild(singer[1]);
         channelVoiceElems[channel] = singer;
+
+        singerindex++;
         
     }
 }
