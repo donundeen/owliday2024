@@ -18,6 +18,7 @@ let firstnoteplayed = false;
 let uniqID = Math.random() * 10000 * Date.now(); 
 
 let myChannels = []; // array of channel numbers that I'm playing. The others get turned down.
+let prevMyChannels = [] // so we can delete channels that were just removed.
 let allChannels = []; // array of all channel numbers
 
 let ws = false;
@@ -35,6 +36,7 @@ var singerHeight =  singerOrigHeight * singerRatio;
 
 var singerSafeScreenWidth = screenwidth - singerWidth;
 var singerSafeScreenHeight = screenheight - singerHeight;
+
 
 var singerspots = [
     [],[],[],[],[],[], // 0-5
@@ -369,6 +371,7 @@ function doAtFirstNote(){
 
 function updateChannels(_myChannels, _allchannels){
     console.log("updateChannels", _myChannels);
+    prevMyChannels = myChannels
     myChannels = _myChannels;
     allChannels = _allchannels;
     if(playing){
@@ -439,7 +442,7 @@ let dynambicons = false;
 let channeldynambs = {};// tracking which channels have which dynambs already.
 
 function gatherDynambs(data){
-    console.log("gatehr" , data);
+//    console.log("gatehr" , data);
     
     // put dynamb data into something a bit easier to manage
     let dynambs = data.dynambs;
@@ -449,7 +452,6 @@ function gatherDynambs(data){
     let iconKeys = Object.keys(data.dynambicons);
     for (let i = 0; i<numdynambkeys; i++){
         let dynamb = dynambs[dynambkeys[i]];
-        console.log(dynamb);
         let thisdynambkeys = Object.keys(dynamb.data);
         thisdynambkeys = thisdynambkeys.filter(d=>iconKeys.includes(d));
         for(let j = 0; j < thisdynambkeys.length; j++){
@@ -464,7 +466,7 @@ function gatherDynambs(data){
 
 function updateDynambs(data){
     let dynamblist = gatherDynambs(data);
-    console.log(dynamblist);
+  //  console.log(dynamblist);
     let dynambicons = data.dynambicons;
     let channelkeys = Object.keys(channelVoiceElems);
     let numchannels = channelkeys.length;
@@ -489,7 +491,7 @@ function updateDynambs(data){
 }
 
 function graphicsPlaceDynambs(dynamblist){
-    console.log("graphicsPlaceDynambs");
+//    console.log("graphicsPlaceDynambs");
 
     let channelkeys = Object.keys(channelVoiceElems);
     let numchannels = channelkeys.length;
@@ -506,7 +508,6 @@ function graphicsPlaceDynambs(dynamblist){
 
         for(let j = 0; j < singerdynambs.length; j++){
             let singerdynamb = singerdynambs[j];
-            console.log(singerdynamb);
             let iconid = "icon"+singerdynamb.id+singerdynamb.text;
             if(singer.iconlist.includes(iconid)){
                 continue;
@@ -531,6 +532,7 @@ function graphicsPlaceDynambs(dynamblist){
             dynambicon = singerdynamb.icon;
             iconelem = document.createElement("p");
             iconelem.classList.add("dynambicon");
+            iconelem.classList.add("channeldynamb"+channelkeys[i]);
             iconelem.setAttribute("id",iconid);
             iconelem.innerText = dynambicon;
             iconelem.style.position = "absolute";
@@ -538,9 +540,7 @@ function graphicsPlaceDynambs(dynamblist){
             iconelem.style.top = sposy;
 //            let transform = singercenterx+"px "+singercentery+"px";
             let transform = (singercenterx - sposx).toString()+"px "+(singercentery - sposy).toString()+"px";
-            console.log("transform", singercenterx, singercentery, sposx, sposy, singerleft, singertop, transform);
             iconelem.style["transform-origin"] = transform;
-            console.log("dynambicon", dynambicon, singerWidth, singerHeight, singerleft, singertop, singer.style.left, singer.style.top, sposx, sposy);
 
             document.body.appendChild(iconelem);            
             
@@ -551,8 +551,28 @@ function graphicsPlaceDynambs(dynamblist){
 function graphicsChannelSetup(channelList, allChannels){
     console.log(channelList);
     let singerindex = 0;
-    for(let i = 0; i < channelList.length; i++){
-        let channel = channelList[i];
+    let staying =  channelList.filter(x => prevMyChannels.includes(x));
+    let adding = channelList.filter(x => !prevMyChannels.includes(x));
+    let leaving = prevMyChannels.filter(x => !channelList.includes(x));
+
+    for(let i = 0; i < leaving.length; i++){
+        let channel = leaving[i];
+        console.log("REMOVING " + channel);
+        channelVoiceElems[channel][0].remove();
+        channelVoiceElems[channel][1].remove();
+        delete channelVoiceElems[channel];
+
+        // remove dyanmbs w class "channeldynamb"+channel
+        var dynambs = document.getElementsByClassName("channeldynamb"+channel);
+
+        while(dynambs[0]) {
+            dynambs[0].parentNode.removeChild(dynambs[0]);
+        } 
+    }
+
+    for(let i = 0; i < adding.length; i++){
+        let channel = adding[i];
+        console.log("ADDING " + channel);
         singerimage = singerimages[singerindex % singerimages.length];
         singer = [];
         singer[0]= document.createElement("img");
@@ -561,6 +581,8 @@ function graphicsChannelSetup(channelList, allChannels){
         singer[1].setAttribute("src", singerimage[1]);
         singer[0].setAttribute("width", singerWidth);
         singer[1].setAttribute("width", singerWidth);
+        singer[0].setAttribute("id", "singer"+channel+"_0");
+        singer[1].setAttribute("id", "singer"+channel+"_1");
         /*
         singer = document.createElement("p");
         singer.innerText = "😐";
@@ -575,44 +597,36 @@ function graphicsChannelSetup(channelList, allChannels){
 //        let posleft =  Math.floor( singerSafeScreenWidth / 2) - (singerWidth / 2)+"px"; 
 //        let postop = Math.floor(singerSafeScreenHeight / 2) - (singerHeight / 2)+"px";
 
-        let posleft = singerspots[singerspotorder[singerindex]][0];
-        let postop = singerspots[singerspotorder[singerindex]][1];
+        let posleft = singerspots[singerspotorder[channel]][0];
+        let postop = singerspots[singerspotorder[channel]][1];
 
-  
         singer[0].style.top = postop;
         singer[1].style.top = postop;
         singer[0].style.left = posleft;
         singer[1].style.left = posleft;
 
-
         document.body.appendChild(singer[0]);
         document.body.appendChild(singer[1]);
         channelVoiceElems[channel] = singer;
-
         singerindex++;
-        
     }
 }
 
 let channelsOn = {};
 let  mouths = 0;
 function graphicsNoteOn(channel){
-//    console.log("on", channel);
     mouths++;
-//    console.log("on m", mouths);
-
-    if(!channelsOn[channel]){
-        channelsOn[channel] = true;            
-//        if(channelVoiceElems[channel].innerText != "😮"){
-        if(channelVoiceElems[channel][1].style.display != "none"){
-            channelVoiceElems[channel][1].style.display = "block";
-
-//            channelVoiceElems[channel].innerText = "😐";
-            setTimeout(function(){
-                channelVoiceElems[channel][1].style.display = "none";
-
-//                channelVoiceElems[channel].innerText = "😮";
-            }, 25);
+    if(myChannels.includes(channel.toString()) && !channelsOn[channel]){
+        channelsOn[channel] = true;    
+        try{
+            if(channelVoiceElems[channel][1].style.display != "none"){
+                channelVoiceElems[channel][1].style.display = "block";
+                setTimeout(function(){
+                    channelVoiceElems[channel][1].style.display = "none";
+                }, 25);
+            }
+        }catch(e){
+            console.log("no element for channel "+ channel, e);
         }
     }
 }
@@ -620,9 +634,14 @@ function graphicsNoteOff(channel){
   //  console.log("off", channel);
     channelsOn[channel] = false;     
     mouths--;       
-//    channelVoiceElems[channel].innerText = "😐";
-    channelVoiceElems[channel][1].style.display = "block";
-
+    if(myChannels.includes(channel.toString())){  
+    //    channelVoiceElems[channel].innerText = "😐";
+        try{
+            channelVoiceElems[channel][1].style.display = "block";
+        }catch(e){
+            console.log("no element for channel "+ channel, e);
+        }
+    }
 }
 
 
