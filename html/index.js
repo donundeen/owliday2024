@@ -60,11 +60,14 @@ let singerspotorder = [
 
 var numsingerrows = Math.floor(screenheight / singerHeight);
 var numsingercols = Math.floor(screenwidth / singerWidth);
+var spoti = 0;
 for(var row = 0; row< numsingerrows; row++){
     var y = row * singerHeight;
-    var spoti = 0;
     for(var col = 0; col < numsingercols; col++){
         var x = col * singerWidth;
+        if(row % 2 == 0){
+            x = x+ Math.floor(singerWidth / 2);
+        }
         singerspots[spoti] = [x,y];
         spoti++;
     }
@@ -569,16 +572,13 @@ function graphicsChannelSetup(channelList, allChannels){
 
 //        let posleft =  Math.floor(Math.random() * singerSafeScreenWidth)+"px"; 
 //        let postop = Math.floor(Math.random() * singerSafeScreenHeight)+"px";
-        let posleft =  Math.floor( singerSafeScreenWidth / 2) - (singerWidth / 2)+"px"; 
-        let postop = Math.floor(singerSafeScreenHeight / 2) - (singerHeight / 2)+"px";
+//        let posleft =  Math.floor( singerSafeScreenWidth / 2) - (singerWidth / 2)+"px"; 
+//        let postop = Math.floor(singerSafeScreenHeight / 2) - (singerHeight / 2)+"px";
 
-        // arrange in a pyramid
-        if(channelList.length == 1){
-            let posleft =  Math.floor( singerSafeScreenWidth / 2) - (singerWidth / 2)+"px"; 
-            let postop = Math.floor(singerSafeScreenHeight / 2) - (singerHeight / 2)+"px";
-        }
+        let posleft = singerspots[singerspotorder[singerindex]][0];
+        let postop = singerspots[singerspotorder[singerindex]][1];
 
-
+  
         singer[0].style.top = postop;
         singer[1].style.top = postop;
         singer[0].style.left = posleft;
