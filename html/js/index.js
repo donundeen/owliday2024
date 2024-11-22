@@ -229,14 +229,13 @@ function timecheck(){
 
 function processServerTime(msg){
     console.log("processservertime" , msg);
-
     let now = Date.now();
     let clientsend = msg.data.clientnow;
     let servertime = msg.data.servernow;
-    let sendtime = msg.data.difference;
+    let difference = msg.data.difference;
     let roundtrip = now - clientsend;
     console.log("roundtrip ", roundtrip);
-    timeskew = sendtime;
+    timeskew = difference;
 }
 
 /***
