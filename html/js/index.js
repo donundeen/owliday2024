@@ -123,7 +123,7 @@ $(function() {
         let time = Date.now();
       //  console.log(time);
 //        $(".time2").text(Math.floor(correctedNow()));
-//        $(".time2").text(correctedNow());
+        $(".time2").text(correctedNow());
 //        $(".time2").text(correctedNow());
 
     },100);
@@ -159,6 +159,7 @@ $(function() {
 
     });
 
+
 });
 
 
@@ -178,6 +179,8 @@ function setup_websockets(){
         wsready = true;
         console.log("opened " + ws.readyState);
      //   message("ready", data);
+     timecheck();
+
     };
 
     ws.onerror = function(msg){
@@ -216,6 +219,32 @@ function setup_websockets(){
     }
 }
 
+
+function timecheck(){
+    let data = {
+        clienttime : Date.now()
+    }
+    message("gettime", data);
+}
+
+function processServerTime(msg){
+    console.log("processservertime" , msg);
+
+    let now = Date.now();
+    let clientsend = msg.data.clientnow;
+    let servertime = msg.data.servernow;
+    let sendtime = msg.data.difference;
+    let roundtrip = now - clientsend;
+    console.log("roundtrip ", roundtrip);
+    timeskew = sendtime;
+}
+
+/***
+ * return a time adjusted for the known skew from the system's accepted time.
+ */
+function correctedNow(){
+    return  Date.now() + timeskew;
+}
 
 /*********************
  * Managing data about raddecs and dynambs
@@ -772,12 +801,7 @@ function graphicsNoteOff(channel){
 Utility Functions
 */
 
-/***
- * return a time adjusted for the known skew from the system's accepted time.
- */
-function correctedNow(){
-    return  Date.now() //;+ timeskew;
-}
+
 
 
 let scalemin = 1000;
