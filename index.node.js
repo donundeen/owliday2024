@@ -3,13 +3,16 @@
 const SocketServer = require("./modules/socketserver.module.js").SocketServer;
 const MidiParser = require("./modules/midiparser.module.js").MidiParser;
 const Choir = require("./modules/choir.module.js").Choir;
-const Pareto = require("./modules/pareto.module.js").Pareto;
+//const Pareto = require("./modules/pareto.module.js").Pareto;
 const db = require('./modules/debugging.module.js').Debugging;
 
 
-let PARETO_IP = "10.0.0.200";
-let PARETO_PORT = "3001";
+//let PARETO_IP = "10.0.0.200"; //"192.168.1.126";//
+//http://192.168.1.126:8082/index.html
+//let PARETO_PORT = "3001";
 
+
+/*
 const { io } = require("socket.io-client");
 const paretoclient = io("http://"+PARETO_IP+":"+PARETO_PORT);
 // client-side
@@ -30,7 +33,7 @@ paretoclient.on("connect_error", (error) => {
         console.log("socketio connect error " ,error.message);
     }
 });
-
+*/
 
 
 
@@ -46,17 +49,6 @@ let UDPLISTENPORT = 8089; // I've nset up a node-RED implementaiton that spews o
 let default_webpage = "index.html";
 
 
-/*
-// not using osc/udp anymore
-var osc = require("osc");
-var udpPort = new osc.UDPPort({
-    localAddress: "0.0.0.0",
-    localPort: UDPLISTENPORT, // this port for listening
-    broadcast: true,
-    metadata: true
-});
-udpPort.open();
-*/
 
 let playing = false;
 let scorestarttime = 0;
@@ -71,9 +63,6 @@ let choir = Object.create(Choir);
 console.log("parser channels",Object.keys(parser.channels) )
 choir.init();
 choir.allChannels = Object.keys(parser.channels);
-
-let pareto = Object.create(Pareto);
-pareto.init();
 
 console.log("all midi file channels used ", parser.channels, parser.numChannels);
 
@@ -182,7 +171,7 @@ function routeFromWebsocket(msg, ip, route, callback){
 
 
 
-
+/*
 paretoclient.on("raddec", (raddec) => { 
     let transmitterId = raddec.transmitterId;
     let rssi =raddec.rssiSignature[0].rssi;
@@ -194,16 +183,14 @@ paretoclient.on("dynamb", (dynamb) => {
     pareto.addDynamb(deviceId,dynamb);
 
 });
+*/
 
-
-
+/*
 function rssiMessage(transmitterId, rssi){
  //   console.log("rssi", transmitterId, rssi);
     pareto.addRaddec(transmitterId, rssi);
-
-
 }
-
+*/
 
 
 /////////////////////////////////////////
@@ -264,13 +251,16 @@ function routeFromOSC(oscMsg, route, callback){
     }
 }
 
+
+/*
 pareto.iterateRaddecs(500, 10, function(raddecColl){
  //   console.log("gonna send these raddecs", raddecColl);
     socket.sendMessage("raddecupdate", raddecColl);
 });
-
+*/
 
 // there aren't that many dynambs usually, so we'll send them all each time.
+/*
 setInterval(function(){
     let data = {
         dynambvals : pareto.dynambvals,
@@ -280,7 +270,7 @@ setInterval(function(){
     socket.sendMessage("dynambupdate", data);
 
 }, 2000);
-
+*/
 
 
 // start the socket server and the web server

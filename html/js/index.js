@@ -1,7 +1,14 @@
 let WEBSOCKET_PORT= 8099;
 let WEBSERVER_PORT = 8082;
+let BEAVER_URL = "10.0.0.200";
+let BEAVER_PORT = 3001;
+
+let HOST = false;
 
 let midifile = "midi/12Days.mid";
+
+
+
 
 var player;
 var playing = false;
@@ -59,9 +66,10 @@ let singerspotorder = [
     14,15,20,21,13,16,8,9,19,22,26,27,7,10,25,28,2,3,32,33,12,17,18,23,1,4,31,34,6,11,24,29,0,5,30,35
 ];
 
-
 var numsingerrows = Math.floor(screenheight / singerHeight);
 var numsingercols = Math.floor(screenwidth / singerWidth);
+console.log("signer size", singerWidth, singerHeight);
+console.log("singer rows/cols", numsingerrows, numsingercols);
 var spoti = 0;
 for(var row = 0; row< numsingerrows; row++){
     var y = row * singerHeight;
@@ -74,39 +82,60 @@ for(var row = 0; row< numsingerrows; row++){
         spoti++;
     }
 }
+console.log("singerspots ", singerspots);
 // create the order of spots
+//  maybe some spots don't exist, because of teh size/orientation of the screen. Remove them from singersportorder
+singerspotorder = singerspotorder.filter((spot) => spot < spoti);
 
 
 var singerimages = [
     // open-mouth image first.
     ["images/JPActiveOpen160.png","images/JPActive160.png"],
     ["images/JewelActiveOpen160.png","images/JewelActive160.png"]
-
 ]
+
+let dynambicons = {
+    acceleration: "🚀",
+    isLiquidDetected: "💧",
+    temperature: "🌡️",
+    relativeHumidity: "💦",
+    illuminance: "☀️",
+    isMotionDetected: "🏃🏻‍♀️",
+    numberOfOccupants:"👪🏽",
+    batteryPercentage: "🔋"
+};
 
 $(function() {
 
-    screenwidth = (window.innerWidth > 0) ? window.innerWidth : screen.width;
-    screenheight = (window.innerHeight > 0) ? window.innerHeight : screen.height;
-    
-    /*
-    setInterval(function(){
-        $(".time2").text(Math.floor(correctedNow() / 1000));
-
-    },10);
-    */
-
     console.log("starting");
 
+    screenwidth = (window.innerWidth > 0) ? window.innerWidth : screen.width;
+    screenheight = (window.innerHeight > 0) ? window.innerHeight : screen.height;
+
     // chnage this depending on location of webserver. Figure out a way to make this more dynamic...
-    let host =  window.location.host;
-    host = host.replace(/:[0-9]+/,"");
+    HOST =  window.location.host;
+    HOST = HOST.replace(/:[0-9]+/,"");
     // remove port
-    console.log(host);
+    console.log(HOST);
+
+    setup_beaver();
+    setup_websockets();
 
 
+    setInterval(function(){
+        $(".time2").text(Math.floor(correctedNow()));
+    },10);
+    
+    /**
+     * set timing for updating the dynambs to the grpahics display
+     */
+
+    setInterval(updateDynambs, 2000);
+
+    /**
+     * setup interaction buttons
+     */
     $(".play").on("click", function(){
-
         if(started){
             // shuffle the instrument choices.
             setupChannelPrograms();
@@ -124,7 +153,17 @@ $(function() {
 
     });
 
-    ws = new WebSocket('ws://'+host+':'+WEBSOCKET_PORT);
+});
+
+
+
+/**
+ * SETUP Websockets message handling
+ */
+
+function setup_websockets(){
+
+    ws = new WebSocket('ws://'+HOST+':'+WEBSOCKET_PORT);
 
     // Browser WebSockets have slightly different syntax than `ws`.
     // Instead of EventEmitter syntax `on('open')`, you assign a callback
@@ -147,9 +186,9 @@ $(function() {
 
     ws.onmessage = function(event) {
     //    console.log("got message ", event);
-     //   midiMakeNote(64, 127, 500);
         msg = JSON.parse(event.data);
 
+        // this messaage isn't used.
         if(msg.address == "playnote"){
             midiMakeNote(msg.data.pitch, msg.data.velocity, msg.data.duration)
         }
@@ -168,66 +207,274 @@ $(function() {
             console.log("yourchannels", msg);
             updateChannels(msg.data.channelList, msg.data.allChannels);
         }
-        if(msg.address == "raddecupdate"){
-            // getting the list of channels for this player
-    //        console.log("raddecupdate", msg.data);
-            updateRaddecs(msg.data);
-        }
-        if(msg.address == "dynambupdate"){
-            updateDynambs(msg.data);
-        }
-
-        // add message about adding a new instrument here
     }
-
-});
-
+}
 
 
+/*********************
+ * Managing data about raddecs and dynambs
+ */
+let raddecElems = {};
 
-function message(address, data){
+/**
+ * setup all the beaver events we want to listen for
+ */
+function setup_beaver(){
+    // https://github.com/reelyactive/beaver
+    console.log("starting beaver");
+    beaver.stream("http://"+BEAVER_URL+":"+BEAVER_PORT, {io: io});
 
-    let msg = {address : address,
-        data: data};  
+    beaver.on("raddec", function(raddec){
+//        console.log("beaver raddec", raddec);
+        updateBeaverRaddec(raddec);
+    });
+    beaver.on("dynamb", function(dynamb){
+//        console.log("beaver dynamb", dynamb);
+        updateBeaverDynamb(dynamb);
+    });
+    beaver.on("appearance", function(deviceSignature, device){
+  //      console.log("beaver appearance", deviceSignature, device);
+    });
+    beaver.on("disappearance", function(deviceSignature){
+//        console.log("beaver disappearance", deviceSignature);
+        removeBeaverDevice(deviceSignature);
+    });
+    beaver.on("error", function(e){
+        console.log("beaver error", e);
+    })
+    beaver.on("connect",function(e){
+        console.log("beaver connect");
+    });
+    beaver.on("disconnect",function(e){
+        console.log("beaver disconnect");
+    });
+}
 
-    console.log("sending message ", address, msg);
-    if(wsready){
-    //    var buf = new Buffer.from(JSON.stringify(msg));
-        ws.send(JSON.stringify(msg));
+
+/**
+ * update list of raddecs
+ * @param {*} raddecs 
+ */
+function updateBeaverRaddec(raddec){
+    let star = false;
+    if(!raddecElems[raddec.transmitterId]){
+        star = document.createElement("p");
+        star.innerText = "⭐";
+        star.style.position = "absolute";
+        star.style.top = Math.floor(Math.random() * screenheight)+"px";
+        star.style.left = Math.floor(Math.random() * screenwidth)+"px";
+        document.body.appendChild(star);
+        raddecElems[raddec.transmitterId] = star;
     }else{
-        console.log("ws not ready");
+        star = raddecElems[raddec.transmitterId];
+    }
+    let scaledTiming = dynScale(raddec.rssiSignature[0].rssi, .5, 5);
+    star.style.animation =  "customAni "+scaledTiming+"s ease 0s infinite normal none";
+}
+
+function removeBeaverDevice(deviceSignature){
+//    console.log("removing ", deviceSignature);
+    if(raddecElems[deviceSignature]){
+        raddecElems[deviceSignature].remove();
+        delete raddecElems[deviceSignature];
     }
 }
 
 
-function correctedNow(){
-    return  Date.now() + timeskew;
+
+let allDynambDevices = {};
+function updateBeaverDynamb(dynamb){
+    allDynambDevices[dynamb.deviceId] = dynamb;
 }
+
+
+/**
+ * put dynamb data into something a bit easier to manage
+ * @param {*} data 
+ * @returns 
+ */
+function gatherDynambs(){
+//    console.log("gatehr" );
+    
+    // put dynamb data into something a bit easier to manage
+    let dynambs = allDynambDevices;
+    let dynamblist = [];
+    let dynambkeys = Object.keys(dynambs);
+    let numdynambkeys = dynambkeys.length;
+    let iconKeys = Object.keys(dynambicons);
+    for (let i = 0; i<numdynambkeys; i++){
+        let dynamb = dynambs[dynambkeys[i]];
+        let thisdynambkeys = Object.keys(dynamb);
+        thisdynambkeys = thisdynambkeys.filter(d=>iconKeys.includes(d));
+        for(let j = 0; j < thisdynambkeys.length; j++){
+            dynamblist.push({
+                    id: dynamb.deviceId,
+                    text: thisdynambkeys[j],
+                    icon: dynambicons[thisdynambkeys[j]] });
+        }
+    }
+    return dynamblist;
+}
+
+/***
+ * update the current list of dynambs, distribute the dynambs to the different channels
+ */
+function updateDynambs(){
+    let dynamblist = gatherDynambs();
+  //  console.log(dynamblist);
+    let channelkeys = Object.keys(channelVoiceElems);
+    let numchannels = channelkeys.length;
+    if(numchannels == 0 || dynamblist.length == 0){
+        return;
+    }
+    let di = 0;
+    let ci = 0;
+    for(let i = 0; i < numchannels; i++){
+        let channelelem = channelVoiceElems[channelkeys[i]];
+        channelelem[0].dynambs = [];
+    }
+    while(di < dynamblist.length || ci < numchannels){
+        let dynamb = dynamblist[di % dynamblist.length];
+        let channelelem = channelVoiceElems[channelkeys[ci % numchannels]];
+        channelelem[0].dynambs.push(dynamb);
+        di++;
+        ci++;
+    }
+    graphicsPlaceDynambs(dynamblist);
+}
+
+
+
+/**
+ * Updating channels - relates to audio and graphics
+ */
+function updateChannels(_myChannels, _allchannels){
+    console.log("updateChannels", _myChannels);
+    prevMyChannels = myChannels
+    myChannels = _myChannels;
+    allChannels = _allchannels;
+    if(playing){
+        setupChannelVolumes();
+    }
+    $(".channels").text(JSON.stringify(myChannels, null , "  "));
+    graphicsChannelSetup(myChannels, allChannels);
+}
+
+
+
+/***
+ * Midi/Audio functions
+ */
+
+/**
+ * Things to do when the first note is played 
+ * (ie song has started, or device is joining in a song in progress)
+ */
+function doAtFirstNote(){
+    setupChannelPrograms()
+    setupChannelVolumes();
+}
+
+
+/**
+ * Whenever there's a midi event (note on, note off, etc)
+ * Do what you need to do
+ * @param {*} midievent 
+ */
+function midievent(midievent){
+    /*
+    console.log(midievent,
+        midievent.getChannel(), 
+        midievent.getNote(),  
+        midievent.getVelocity(), 
+        midievent.getTempo(), 
+        midievent.getBPM(),
+        midievent.getSysExId(),
+        midievent.getText(),
+        midievent.getData(),
+        midievent.isProgName(),
+        midievent.isFullSysEx(),
+        midievent.isMidi(),
+        midievent.isNoteOn()
+    );
+    */
+
+    if(midievent.isNoteOn()){
+//        console.log("on", midievent.getChannel(), midievent.getNote());
+        graphicsNoteOn(midievent.getChannel());
+    }
+    if(midievent.isNoteOff()){
+   //     console.log("off", midievent.getChannel(), midievent.getNote());
+        graphicsNoteOff(midievent.getChannel());
+    }
+
+    if( !firstnoteplayed && midievent.isNoteOn()){
+        firstnoteplayed = true;
+        doAtFirstNote();
+    }
+}
+
+
+
+/**
+ * Set the tones randomly for each of the voices/channels
+ */
+function setupChannelPrograms(){
+    tinysynth.program(0, Math.floor(Math.random()* 120));
+    tinysynth.program(1, Math.floor(Math.random()* 120));
+    tinysynth.program(2, Math.floor(Math.random()* 120));
+    tinysynth.program(3, Math.floor(Math.random()* 120));
+    tinysynth.program(4, Math.floor(Math.random()* 120));
+    tinysynth.program(5, Math.floor(Math.random()* 120));
+    tinysynth.program(6, Math.floor(Math.random()* 120));
+    //   out = JZZ().or(console.log('Cannot start MIDI engine!')).openMidiOut().or(console.log('Cannot open MIDI Out!'));
+}
+
+/***
+ * Setup the channel volume for all channels that this device is supposed to be playing
+ */
+function setupChannelVolumes(){
+    for(var i = 0; i < allChannels.length; i++){
+        let channel = allChannels[i];
+        if(myChannels.includes(channel)){
+            tinysynth.volumeF(channel, 1.0);
+        }else{
+            tinysynth.volumeF(channel, 0.0);
+        }
+    }
+}
+
 
 let notecount = 0;
+// this isn't used, but could be.
 function midiMakeNote(pitch, velocity, duration){
     if(!started){
         return;
     }
     notecount++;
     $(".time").text(notecount +" " +pitch + " "+ velocity + " " + duration);
-
     tinysynth.noteOn(0, pitch, velocity)
-  //  .wait(duration).noteOff(0, pitch);
-    
     setTimeout(function(){
        tinysynth.noteOff(0, pitch);
     }, duration);
-
 }
 
 
+/**
+ * set the midi voice for the specified channel
+ * @param {*} channel 
+ * @param {*} bank 
+ * @param {*} program 
+ */
 function setMidiVoice(channel, bank, program){
     // assuming default bank.
     tinysynth.program(channel, program);
-
 }
 
+/**
+ * load and start the midi file at the specified time
+ * @param {*} starttime 
+ */
 function startMidiFile(starttime){
     let waittime = starttime - Date.now();
     console.log("starting midi file at", starttime, waittime);
@@ -235,6 +482,10 @@ function startMidiFile(starttime){
     fromURL(starttime);
 }
 
+
+/***
+ * Load midi file from URL and pass to the Load function that sets up the midi data to play
+ */
 function fromURL(starttime) {
     console.log("fromURL");
     clear();
@@ -272,6 +523,10 @@ function fromURL(starttime) {
     }
 }
 
+
+/***
+ * Load Midi data and setup play time
+ */
 function load(data, name, starttime) {
     console.log("load", name, starttime);
     try {
@@ -327,168 +582,23 @@ function playStop() {
     }
 }
 
-function midievent(midievent){
-    /*
-    console.log(midievent,
-        midievent.getChannel(), 
-        midievent.getNote(),  
-        midievent.getVelocity(), 
-        midievent.getTempo(), 
-        midievent.getBPM(),
-        midievent.getSysExId(),
-        midievent.getText(),
-        midievent.getData(),
-        midievent.isProgName(),
-        midievent.isFullSysEx(),
-        midievent.isMidi(),
-        midievent.isNoteOn()
-    );
-    */
-
-    if(midievent.isNoteOn()){
-//        console.log("on", midievent.getChannel(), midievent.getNote());
-        graphicsNoteOn(midievent.getChannel());
-    }
-    if(midievent.isNoteOff()){
-   //     console.log("off", midievent.getChannel(), midievent.getNote());
-        graphicsNoteOff(midievent.getChannel());
-    }
-
-    if( !firstnoteplayed && midievent.isNoteOn()){
-        firstnoteplayed = true;
-        doAtFirstNote();
-    }
-}
-
-function doAtFirstNote(){
-    setupChannelPrograms()
-    setupChannelVolumes();
-}
 
 
 
 
 
-function updateChannels(_myChannels, _allchannels){
-    console.log("updateChannels", _myChannels);
-    prevMyChannels = myChannels
-    myChannels = _myChannels;
-    allChannels = _allchannels;
-    if(playing){
-        setupChannelVolumes();
-    }
-    $(".channels").text(JSON.stringify(myChannels, null , "  "));
-    graphicsChannelSetup(myChannels, allChannels);
-}
-
-function setupChannelPrograms(){
-    tinysynth.program(0, Math.floor(Math.random()* 120));
-    tinysynth.program(1, Math.floor(Math.random()* 120));
-    tinysynth.program(2, Math.floor(Math.random()* 120));
-    tinysynth.program(3, Math.floor(Math.random()* 127));
-    tinysynth.program(4, Math.floor(Math.random()* 127));
-    tinysynth.program(5, Math.floor(Math.random()* 127));
-    tinysynth.program(6, Math.floor(Math.random()* 127));
-    //   out = JZZ().or(console.log('Cannot start MIDI engine!')).openMidiOut().or(console.log('Cannot open MIDI Out!'));
-}
-
-function setupChannelVolumes(){
-    for(var i = 0; i < allChannels.length; i++){
-        let channel = allChannels[i];
-        if(myChannels.includes(channel)){
-            tinysynth.volumeF(channel, 1.0);
-        }else{
-            tinysynth.volumeF(channel, 0.0);
-        }
-    }
-}
+/***************
+ * Graphics/Animation functions
+ */
 
 
-// GRAPHICS stuff
-let raddecElems = {};
+let channelVoiceElems = {};
+
 
 function setupGraphics(){
 
 }
-function updateRaddecs(raddecs){
-    // update graphics here. 
-    for(let i = 0; i < raddecs.length; i++){
-        let raddec = raddecs[i];
-        let star = false;
-        if(!raddecElems[raddec.transmitterId]){
-            star = document.createElement("p");
-            star.innerText = "⭐";
-            star.style.position = "absolute";
-            star.style.top = Math.floor(Math.random() * screenheight)+"px";
-            star.style.left = Math.floor(Math.random() * screenwidth)+"px";
-            document.body.appendChild(star);
-            raddecElems[raddec.transmitterId] = star;
-        }else{
-         //   console.log(raddec.transmitterId, "already exists")
-            star = raddecElems[raddec.transmitterId];
-        }
-     //   console.log(raddecElems);
-//        let scaledrssi = dynScale(raddec.rssi, .2, 1);
-        let scaledTiming = dynScale(raddec.rssi, .5, 5);
-//        star.style.opacity = scaledrssi;
-        star.style.animation =  "customAni "+scaledTiming+"s ease 0s infinite normal none";
 
-    }
-}
-
-
-let channelVoiceElems = {};
-let dynambicons = false;
-let channeldynambs = {};// tracking which channels have which dynambs already.
-
-function gatherDynambs(data){
-//    console.log("gatehr" , data);
-    
-    // put dynamb data into something a bit easier to manage
-    let dynambs = data.dynambs;
-    let dynamblist = [];
-    let dynambkeys = Object.keys(dynambs);
-    let numdynambkeys = dynambkeys.length;
-    let iconKeys = Object.keys(data.dynambicons);
-    for (let i = 0; i<numdynambkeys; i++){
-        let dynamb = dynambs[dynambkeys[i]];
-        let thisdynambkeys = Object.keys(dynamb.data);
-        thisdynambkeys = thisdynambkeys.filter(d=>iconKeys.includes(d));
-        for(let j = 0; j < thisdynambkeys.length; j++){
-            dynamblist.push({
-                    id: dynamb.deviceId,
-                    text: thisdynambkeys[j],
-                    icon: data.dynambicons[thisdynambkeys[j]] });
-        }
-    }
-    return dynamblist;
-}
-
-function updateDynambs(data){
-    let dynamblist = gatherDynambs(data);
-  //  console.log(dynamblist);
-    let dynambicons = data.dynambicons;
-    let channelkeys = Object.keys(channelVoiceElems);
-    let numchannels = channelkeys.length;
-    if(numchannels == 0 || dynamblist.length == 0){
-        return;
-    }
-    let di = 0;
-    let ci = 0;
-    for(let i = 0; i < numchannels; i++){
-        let channelelem = channelVoiceElems[channelkeys[i]];
-        channelelem[0].dynambs = [];
-    }
-    while(di < dynamblist.length || ci < numchannels){
-        let dynamb = dynamblist[di % dynamblist.length];
-        let channelelem = channelVoiceElems[channelkeys[ci % numchannels]];
-//        console.log(channelelem);
-        channelelem[0].dynambs.push(dynamb);
-        di++;
-        ci++;
-    }
-    graphicsPlaceDynambs(dynamblist);
-}
 
 function graphicsPlaceDynambs(dynamblist){
 //    console.log("graphicsPlaceDynambs");
@@ -605,6 +715,8 @@ function graphicsChannelSetup(channelList, allChannels){
         singer[0].style.left = posleft;
         singer[1].style.left = posleft;
 
+        console.log("singer placed " , channel,  singerspotorder[channel], postop, posleft);
+
         document.body.appendChild(singer[0]);
         document.body.appendChild(singer[1]);
         channelVoiceElems[channel] = singer;
@@ -646,6 +758,22 @@ function graphicsNoteOff(channel){
 
 
 
+
+
+
+//
+/******
+Utility Functions
+*/
+
+/***
+ * return a time adjusted for the known skew from the system's accepted time.
+ */
+function correctedNow(){
+    return  Date.now() + timeskew;
+}
+
+
 let scalemin = 1000;
 let scalemax = -10000;
 function dynScale(input, outmin, outmax){
@@ -665,6 +793,23 @@ function dynScale(input, outmin, outmax){
 //    console.log(input, scalemin, scalemax,output );
 
     return output
+}
 
+/**
+ * send a ws message
+ * @param {*} address 
+ * @param {*} data 
+ */
+function message(address, data){
 
+    let msg = {address : address,
+        data: data};  
+
+    console.log("sending message ", address, msg);
+    if(wsready){
+    //    var buf = new Buffer.from(JSON.stringify(msg));
+        ws.send(JSON.stringify(msg));
+    }else{
+        console.log("ws not ready");
+    }
 }
