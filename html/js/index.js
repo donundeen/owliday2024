@@ -7,9 +7,6 @@ let HOST = false;
 
 let midifile = "midi/12Days.mid";
 
-
-
-
 var player;
 var playing = false;
 var out;
@@ -123,8 +120,13 @@ $(function() {
 
 
     setInterval(function(){
-        $(".time2").text(Math.floor(correctedNow()));
-    },10);
+        let time = Date.now();
+      //  console.log(time);
+//        $(".time2").text(Math.floor(correctedNow()));
+//        $(".time2").text(correctedNow());
+//        $(".time2").text(correctedNow());
+
+    },100);
     
     /**
      * set timing for updating the dynambs to the grpahics display
@@ -132,10 +134,14 @@ $(function() {
 
     setInterval(updateDynambs, 2000);
 
+
+
+
     /**
      * setup interaction buttons
      */
     $(".play").on("click", function(){
+
         if(started){
             // shuffle the instrument choices.
             setupChannelPrograms();
@@ -770,7 +776,7 @@ Utility Functions
  * return a time adjusted for the known skew from the system's accepted time.
  */
 function correctedNow(){
-    return  Date.now() + timeskew;
+    return  Date.now() //;+ timeskew;
 }
 
 
