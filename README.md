@@ -9,13 +9,14 @@ Each star represents a raddec served up by Beaver, a Pareto Anywhere module that
 
 Pressing "Play!" launches a midi file, synced across all connected devices, event those that join after the performance has started.
 
-When the performance starts, the midi channels are distributed to all of the connected devices, and tones picked at random, so no performance is the same twice, and everyone gets their own unique part to play. A Pareto Anywhere mascot appears for each voice in the midi file. Each mascot sings the notes for its assigned channel.
+When the performance starts, the midi channels are distributed to all of the connected devices, and instruments are picked at random, so no performance is the same twice, and everyone gets their own unique part to play. A Pareto Anywhere mascot appears for each voice in the midi file. Each mascot sings the notes for its assigned channel.
 
 Around each mascot spin icons representing all the dynamb values captured by Pareto Anwhere and passed along through Beaver.
 
 # Prerequisites
 
 - Pareto Anywhere running somewhere on your network. Note the IP address and port, you'll need it for configuring the app.
+
 - Some BLE devices nearby. Unless you live in a lead-lined cave in siberia, this should be no problem.
 
 # Installation
