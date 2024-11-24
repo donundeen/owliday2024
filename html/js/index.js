@@ -135,7 +135,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     setInterval(function(){
-        let time = Date.now();
         document.querySelectorAll('.time2').forEach(elem => {
             elem.textContent = correctedNow();
         });
@@ -289,31 +288,6 @@ function restore_default_vars(){
     if (paretoPortElement) paretoPortElement.value = BEAVER_PORT;
 }
 
-
-function timecheck(){
-    let data = {
-        clienttime : Date.now()
-    }
-    message("gettime", data);
-}
-
-function processServerTime(msg){
-    console.log("processservertime" , msg);
-    let now = Date.now();
-    let clientsend = msg.data.clientnow;
-    let servertime = msg.data.servernow;
-    let difference = msg.data.difference;
-    let roundtrip = now - clientsend;
-    console.log("roundtrip ", roundtrip);
-    timeskew = difference;
-}
-
-/***
- * return a time adjusted for the known skew from the system's accepted time.
- */
-function correctedNow(){
-    return  Date.now() + timeskew;
-}
 
 /*********************
  * Managing data about raddecs and dynambs
@@ -488,7 +462,7 @@ function doAtFirstNote(){
  * @param {*} midievent 
  */
 function midievent(midievent){
-    
+    /*
     console.log(midievent,
         midievent.getChannel(), 
         midievent.getNote(),  
@@ -503,7 +477,7 @@ function midievent(midievent){
         midievent.isMidi(),
         midievent.isNoteOn()
     );
-    
+    */
 
     if(midievent.isNoteOn()){
 //        console.log("on", midievent.getChannel(), midievent.getNote());
@@ -672,16 +646,28 @@ function load(data, name, starttime) {
             console.log("sending song over");
             songOver();
             playing = false;
+            started = false;
             message("songover", true);
         }
 
         let waittime = starttime - correctedNow();
         if(waittime > 0){
-            console.log("waiting");
             setTimeout(function(){
                 playing = true;
                 player.play();        
             }, waittime);
+            document.querySelector('.countdown').style.display = "block";
+            let interval = setInterval(function(){
+                let countdown = Math.floor((starttime - correctedNow())/1000) +1 ;
+                let countdownElement = document.querySelector('.countdown');
+                if (countdownElement) {
+                    countdownElement.textContent = countdown;
+                }
+                if(countdown < 0){
+                    clearInterval(interval);
+                    document.querySelector('.countdown').style.display = "none";
+                }
+            },100);
         }else{
 
             let seektime = correctedNow()- starttime;
@@ -751,7 +737,7 @@ function graphicsPlaceDynambs(dynamblist){
     let channelkeys = Object.keys(channelVoiceElems);
     let numchannels = channelkeys.length;
 
-    console.log("graphicsPlaceDynambs",channelVoiceElems);
+//    console.log("graphicsPlaceDynambs",channelVoiceElems);
 
     for(let i = 0; i < numchannels; i++){
         let channelelem = channelVoiceElems[channelkeys[i]];
@@ -953,4 +939,36 @@ function message(address, data){
     }else{
         console.log("ws not ready");
     }
+}
+
+
+
+/*****************
+ * Handle time sync
+ */
+function timecheck(){
+    let data = {
+        clienttime : Date.now()
+    }
+    message("gettime", data);
+}
+
+function processServerTime(msg){
+    console.log("processservertime" , msg);
+    let now = Date.now();
+    let clientsend = msg.data.clientnow;
+    let servertime = msg.data.servernow;
+    let difference = msg.data.difference;
+    let roundtrip = now - clientsend;
+    console.log("roundtrip ", roundtrip);
+//    timeskew = difference;
+    timeskew = difference + (roundtrip/2);
+}
+
+/***
+ * return a time adjusted for the known skew from the system's accepted time.
+ */
+function correctedNow(){
+//    return  Date.now() + timeskew;
+    return  Date.now() - timeskew;
 }

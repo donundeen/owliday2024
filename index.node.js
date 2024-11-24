@@ -55,7 +55,8 @@ let default_webpage = "index.html";
 // GrandmaGotRanOverByAReindeer // good!
 //let midifile = "holidaymedley.mid"; // nope
 // Pogues_Fairy_Tale_In_New_York_City.mid
-let midifile = "Pogues_Fairy_Tale_In_New_York_City.mid"; 
+let midifile = "Pogues_Fairy_Tale_In_New_York_City.mid";  // best one
+//let midifile = "Happy-Birthday.mid"; // short, for testing
 let mididir = "html/midi";
 
 
@@ -94,7 +95,8 @@ socket.setMessageReceivedCallback(function(msg, ip){
         let data = {
             servernow: now,
             clientnow: clientnow,
-            difference: now - clientnow
+//            difference: now - clientnow
+            difference: clientnow - now
         }
         socket.sendMessage("servertime", data);    
     });
@@ -110,7 +112,7 @@ socket.setMessageReceivedCallback(function(msg, ip){
 
         if(scorestarttime == 0){
             let clienttime = msg.clienttime;
-            scorestarttime = clienttime + 1000; // wait 5 seconds;
+            scorestarttime = clienttime + 5000; // wait 5 seconds;
         }
         let data ={starttime: scorestarttime, uniqID : msg.uniqID, midifile: midifile};
         socket.sendMessage("startplaying", data, ip);

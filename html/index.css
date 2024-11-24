@@ -23,7 +23,6 @@ body{
 .star{
     position: absolute;
     z-index: 50;
-
 }
 
 .singer {
@@ -35,8 +34,35 @@ body{
     font-size: 2em;
     animation: rotation1 6s linear 0s infinite normal none; 
     z-index: 1000;
-    
+}
 
+.countdowncontainer{
+    position:absolute;
+    display:flex;
+    z-index: 10000;
+}
+
+.countdown{
+    font-size: 4em;
+    z-index: 1000;
+    display: none;
+    position:absolute;
+    z-index: 5000;    
+
+    margin: 10px;
+    /* Basic styling */
+    background-color: #D72638; /* Festive red */
+    color: #FFF7C0; /* Warm yellow text */
+    font-size: 18px; /* Larger, readable text size */
+    font-family: "Georgia", "Palatino Linotype", "Times New Roman", serif; /* Elegant, festive serif font */
+    border: 3px solid #2ECC71; /* Holiday green border */
+    border-radius: 15px; /* Rounded edges for a festive feel */
+    padding: 12px 25px; /* Comfortable padding */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: 0.3s ease-in-out; /* Smooth hover animation */
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2); /* Festive button depth */
+    position: relative; /* For adding sparkle decoration */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Festive glow */
 }
 
 .configdiv{
@@ -48,6 +74,8 @@ body{
   display:flex;
   z-index: 2000;
 }
+
+
 .buttonstyle1 {
   margin: 10px;
   /* Basic styling */
