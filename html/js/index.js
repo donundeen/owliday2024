@@ -1,10 +1,16 @@
-let WEBSOCKET_PORT= 8098;
-let WEBSERVER_PORT = 8083;
-let BEAVER_URL = "10.0.0.200";
-let BEAVER_PORT = 3001;
+
+let DEFAULT_WEBSOCKET_PORT= 8098;
+let DEFAULT_WEBSERVER_PORT = 8083;
+let DEFAULT_BEAVER_URL = "10.0.0.200";
+let DEFAULT_BEAVER_PORT = 3001;
+
+let WEBSOCKET_PORT= DEFAULT_WEBSOCKET_PORT;
+let WEBSERVER_PORT = DEFAULT_WEBSERVER_PORT;
+let BEAVER_URL = DEFAULT_BEAVER_URL;
+let BEAVER_PORT = DEFAULT_BEAVER_PORT;
+
 
 let HOST = false;
-
 
 // midifile here is default- server will tell client which one to play when it sends "startplaying" message
 let mididir = "midi";
@@ -122,6 +128,9 @@ $(function() {
     // remove port
     console.log(HOST);
 
+
+    setup_config_vars();
+
     setup_beaver();
     setup_websockets();
 
@@ -140,9 +149,6 @@ $(function() {
      */
 
     setInterval(updateDynambs, 2000);
-
-
-
 
     /**
      * setup interaction buttons
@@ -166,6 +172,19 @@ $(function() {
 
     });
 
+    $(".configbutton").on("click", function(){
+        $(".configbuttondiv").hide();
+        $(".configdiv").show();
+    });
+    $(".savebutton").on("click", function(){
+        update_config_vars();
+        $(".configbuttondiv").show();
+        $(".configdiv").hide();
+    });
+    $(".restorebutton").on("click", function(){
+        restore_default_vars();
+    });
+
 
 });
 
@@ -185,9 +204,8 @@ function setup_websockets(){
     ws.onopen = function() {
         wsready = true;
         console.log("opened " + ws.readyState);
-     //   message("ready", data);
-     timecheck();
-
+        //   message("ready", data);
+        timecheck();
     };
 
     ws.onerror = function(msg){
@@ -225,6 +243,31 @@ function setup_websockets(){
             updateChannels(msg.data.channelList, msg.data.allChannels);
         }
     }
+}
+
+
+function setup_config_vars(){
+    BEAVER_URL = localStorage.BEAVER_URL ? localStorage.BEAVER_URL : DEFAULT_BEAVER_URL;
+    BEAVER_PORT = localStorage.BEAVER_PORT ? localStorage.BEAVER_PORT : DEFAULT_BEAVER_PORT;
+
+    $("#paretoip").val(BEAVER_URL);
+    $("#paretoport").val(BEAVER_PORT);
+
+}
+
+function update_config_vars(){
+    BEAVER_URL = $("#paretoip").val();
+    BEAVER_PORT= $("#paretoport").val();
+    localStorage.setItem("BEAVER_URL",BEAVER_URL);
+    localStorage.setItem("BEAVER_PORT",BEAVER_PORT);
+    setup_beaver();
+}
+
+function restore_default_vars(){
+    BEAVER_URL = DEFAULT_BEAVER_URL;
+    BEAVER_PORT = DEFAULT_BEAVER_PORT;
+    $("#paretoip").val(BEAVER_URL);
+    $("#paretoport").val(BEAVER_PORT);
 }
 
 

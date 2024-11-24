@@ -12,13 +12,27 @@
         <link    rel="stylesheet" href="./index.css">
         <link    rel="stylesheet" href="./jquery-ui.css">
         <link    rel="stylesheet" href="./jquery-ui.theme.css">
+        <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+
     </head>
     <body>
-        <h1 class="time"></h1>
-        <h1 class="time2"></h1>
-<!--        <pre class="dbg"></pre>-->
-<!--        <pre class="channels"></pre>-->
-        <span class="play">Hoooppy Holidowls!</span>
-
+        <div class="debug">
+            <h1 class="time"></h1>
+            <h1 class="time2"></h1>
+    <!--        <pre class="dbg"></pre>-->
+    <!--        <pre class="channels"></pre>-->
+        </div>
+        <div class="startandconfig">
+            <div class="flexitem playbuttondiv "><button class="play  buttonstyle1">Play!</button></div>
+            <div class="flexitem configbuttondiv"><button class="configbutton  buttonstyle1">Setup</button></div>
+            <div class="flexitem configdiv">
+                <label for="paretoip">Pareto IP:</label>
+                <input type="text" id="paretoip" name="paretoip" /><BR>
+                <label for="paretoport">Pareto Port:</label>
+                <input type="text" id="paretoport" name="paretoport" /><BR>
+                    <button class="savebutton">Save</button>
+                    <button class="restorebutton">Restore Defaults</button>
+            </div>
+        </div>
     </body>
 </html>
