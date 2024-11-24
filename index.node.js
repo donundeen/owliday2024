@@ -43,7 +43,7 @@ db.trace = false;
 db.log("starting","now",[1,2,3]);
 
 
-let WEBSOCKET_PORT= 8099;
+let WEBSOCKET_PORT= 8098;
 let WEBSERVER_PORT = 8082;
 let UDPLISTENPORT = 8089; // I've nset up a node-RED implementaiton that spews out /pareto/raddec and /pareto/dynamb json
 let default_webpage = "index.html";
@@ -52,9 +52,10 @@ let default_webpage = "index.html";
 //let midifile = "12Days.mid"; // too christmassy?
 //let midifile = "mfrosty.mid"; // this one is good.
 //let midifile = "dingdong.mid"; // this one is good.
-// GrandmaGotRanOverByAReindeer
+// GrandmaGotRanOverByAReindeer // good!
 //let midifile = "holidaymedley.mid"; // nope
-let midifile = "GrandmaGotRanOverByAReindeer.mid"; // nope
+// Pogues_Fairy_Tale_In_New_York_City.mid
+let midifile = "Pogues_Fairy_Tale_In_New_York_City.mid"; 
 let mididir = "html/midi";
 
 

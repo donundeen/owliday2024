@@ -1,4 +1,4 @@
-let WEBSOCKET_PORT= 8099;
+let WEBSOCKET_PORT= 8098;
 let WEBSERVER_PORT = 8082;
 let BEAVER_URL = "10.0.0.200";
 let BEAVER_PORT = 3001;
@@ -65,6 +65,9 @@ var singerspots = [
 let singerspotorder = [
     14,15,20,21,13,16,8,9,19,22,26,27,7,10,25,28,2,3,32,33,12,17,18,23,1,4,31,34,6,11,24,29,0,5,30,35
 ];
+
+
+let exludevoices = []
 
 var numsingerrows = Math.floor(screenheight / singerHeight);
 var numsingercols = Math.floor(screenwidth / singerWidth);
@@ -459,14 +462,34 @@ function midievent(midievent){
  * Set the tones randomly for each of the voices/channels
  */
 function setupChannelPrograms(){
-    tinysynth.program(0, Math.floor(Math.random()* 120));
-    tinysynth.program(1, Math.floor(Math.random()* 120));
-    tinysynth.program(2, Math.floor(Math.random()* 120));
-    tinysynth.program(3, Math.floor(Math.random()* 120));
-    tinysynth.program(4, Math.floor(Math.random()* 120));
-    tinysynth.program(5, Math.floor(Math.random()* 120));
-    tinysynth.program(6, Math.floor(Math.random()* 120));
+    tinysynth.program(0, getRandomMidiVoice());
+    tinysynth.program(1, getRandomMidiVoice());
+    tinysynth.program(2, getRandomMidiVoice());
+    tinysynth.program(3, getRandomMidiVoice());
+    tinysynth.program(4, getRandomMidiVoice());
+    tinysynth.program(5, getRandomMidiVoice());
+    tinysynth.program(6, getRandomMidiVoice());
     //   out = JZZ().or(console.log('Cannot start MIDI engine!')).openMidiOut().or(console.log('Cannot open MIDI Out!'));
+}
+
+
+let assignedVoices = [];
+function getRandomMidiVoice(){
+    let foundone = false;
+    let count = 0;
+    while(!foundone){
+        let voice = Math.floor(Math.random()* 116);
+        if(!assignedVoices.includes(voice)){
+            assignedVoices.push(voice);
+            foundone= true;
+            return voice;
+        }
+        count++;
+        if(count > 120){
+            return voice;
+        }
+    }
+    
 }
 
 /***
