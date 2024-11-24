@@ -248,6 +248,7 @@ function setup_websockets(){
         if(msg.address == "startplaying"){
             console.log("startingplaing", msg);
             midifile= msg.data.midifile;
+            startGraphics();
             startMidiFile(msg.data.starttime);
         }
 
@@ -487,7 +488,7 @@ function doAtFirstNote(){
  * @param {*} midievent 
  */
 function midievent(midievent){
-    /*
+    
     console.log(midievent,
         midievent.getChannel(), 
         midievent.getNote(),  
@@ -502,7 +503,7 @@ function midievent(midievent){
         midievent.isMidi(),
         midievent.isNoteOn()
     );
-    */
+    
 
     if(midievent.isNoteOn()){
 //        console.log("on", midievent.getChannel(), midievent.getNote());
@@ -669,6 +670,7 @@ function load(data, name, starttime) {
         });      
         player.onEnd = function() {
             console.log("sending song over");
+            songOver();
             playing = false;
             message("songover", true);
         }
@@ -713,6 +715,10 @@ function playStop() {
     }
 }
 
+function songOver(){
+    playing = false;
+    stopGraphics();
+}
 
 
 
@@ -728,6 +734,14 @@ let channelVoiceElems = {};
 
 function setupGraphics(){
 
+}
+
+function startGraphics(){
+    document.querySelector('.startandconfig').style.display = "none";
+}
+
+function stopGraphics(){
+    document.querySelector('.startandconfig').style.display = "block";
 }
 
 
@@ -792,7 +806,6 @@ function graphicsPlaceDynambs(dynamblist){
 }
 
 function graphicsChannelSetup(channelList, allChannels){
-    console.log(channelList);
     let singerindex = 0;
     let staying =  channelList.filter(x => prevMyChannels.includes(x));
     let adding = channelList.filter(x => !prevMyChannels.includes(x));

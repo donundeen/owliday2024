@@ -22,15 +22,20 @@ body{
 
 .star{
     position: absolute;
+    z-index: 50;
+
 }
 
 .singer {
     font-size: 4em;
+    z-index: 500;
 }
 
 .dynambicon{
     font-size: 2em;
     animation: rotation1 6s linear 0s infinite normal none; 
+    z-index: 1000;
+    
 
 }
 
@@ -41,6 +46,7 @@ body{
 .startandconfig{
   position:absolute;
   display:flex;
+  z-index: 2000;
 }
 .buttonstyle1 {
   margin: 10px;
