@@ -49,13 +49,21 @@ let UDPLISTENPORT = 8089; // I've nset up a node-RED implementaiton that spews o
 let default_webpage = "index.html";
 
 
+//let midifile = "12Days.mid"; // too christmassy?
+//let midifile = "mfrosty.mid"; // this one is good.
+//let midifile = "dingdong.mid"; // this one is good.
+// GrandmaGotRanOverByAReindeer
+//let midifile = "holidaymedley.mid"; // nope
+let midifile = "GrandmaGotRanOverByAReindeer.mid"; // nope
+let mididir = "html/midi";
+
 
 let playing = false;
 let scorestarttime = 0;
 
 let parser = Object.create(MidiParser);
 parser.db = db;
-parser.midiFile = "html/midi/12Days.mid"; 
+parser.midiFile = mididir + "/"+ midifile; 
 parser.startTime = (new Date()).getTime() + 10000 ; // add 10 seconds
 parser.parseMidiFile();
 
@@ -103,7 +111,7 @@ socket.setMessageReceivedCallback(function(msg, ip){
             let clienttime = msg.clienttime;
             scorestarttime = clienttime + 1000; // wait 5 seconds;
         }
-        let data ={starttime: scorestarttime, uniqID : msg.uniqID};
+        let data ={starttime: scorestarttime, uniqID : msg.uniqID, midifile: midifile};
         socket.sendMessage("startplaying", data, ip);
     });
 

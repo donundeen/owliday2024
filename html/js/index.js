@@ -5,7 +5,10 @@ let BEAVER_PORT = 3001;
 
 let HOST = false;
 
-let midifile = "midi/12Days.mid";
+
+// midifile here is default- server will tell client which one to play when it sends "startplaying" message
+let mididir = "midi";
+let midifile = "holidaymedley.mid"; // nope
 
 var player;
 var playing = false;
@@ -87,8 +90,9 @@ singerspotorder = singerspotorder.filter((spot) => spot < spoti);
 
 var singerimages = [
     // open-mouth image first.
-    ["images/JPActiveOpen160.png","images/JPActive160.png"],
-    ["images/JewelActiveOpen160.png","images/JewelActive160.png"]
+    ["images/cormorant-logoOpen.png","images/cormorant-logo.png"],
+    ["images/json-silo-logoOpen2.png","images/json-silo-logo.png"],
+    ["images/cuttlefish-logoOpen.png","images/cuttlefish-logo.png"],
 ]
 
 let dynambicons = {
@@ -207,7 +211,8 @@ function setup_websockets(){
         }
 
         if(msg.address == "startplaying"){
-            console.log("startingplaing", msg.data);
+            console.log("startingplaing", msg);
+            midifile= msg.data.midifile;
             startMidiFile(msg.data.starttime);
         }
 
@@ -523,7 +528,7 @@ function startMidiFile(starttime){
 function fromURL(starttime) {
     console.log("fromURL");
     clear();
-    var url = midifile;
+    var url = mididir + "/"+midifile;
     try {
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function() {
@@ -639,6 +644,8 @@ function graphicsPlaceDynambs(dynamblist){
 
     let channelkeys = Object.keys(channelVoiceElems);
     let numchannels = channelkeys.length;
+
+    console.log("graphicsPlaceDynambs",channelVoiceElems);
 
     for(let i = 0; i < numchannels; i++){
         let channelelem = channelVoiceElems[channelkeys[i]];
