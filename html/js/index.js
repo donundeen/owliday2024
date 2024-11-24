@@ -1,4 +1,3 @@
-
 let DEFAULT_WEBSOCKET_PORT= 8098;
 let DEFAULT_WEBSERVER_PORT = 8083;
 let DEFAULT_BEAVER_URL = "10.0.0.200";
@@ -115,8 +114,8 @@ let dynambicons = {
     batteryPercentage: "🔋"
 };
 
-$(function() {
-
+// Replace jQuery document ready
+document.addEventListener('DOMContentLoaded', function() {
     console.log("starting");
 
     screenwidth = (window.innerWidth > 0) ? window.innerWidth : screen.width;
@@ -137,12 +136,10 @@ $(function() {
 
     setInterval(function(){
         let time = Date.now();
-      //  console.log(time);
-//        $(".time2").text(Math.floor(correctedNow()));
-        $(".time2").text(correctedNow());
-//        $(".time2").text(correctedNow());
-
-    },100);
+        document.querySelectorAll('.time2').forEach(elem => {
+            elem.textContent = correctedNow();
+        });
+    }, 100);
     
     /**
      * set timing for updating the dynambs to the grpahics display
@@ -153,36 +150,53 @@ $(function() {
     /**
      * setup interaction buttons
      */
-    $(".play").on("click", function(){
+    document.querySelectorAll('.play').forEach(elem => {
+        elem.addEventListener('click', function() {
+            console.log("stating1");
+            if(started){
+                // shuffle the instrument choices.
+                setupChannelPrograms();
+                return;
+            }
+            console.log("starting2");
+            started = true;
 
-        if(started){
-            // shuffle the instrument choices.
-            setupChannelPrograms();
-            return;
-        }
-        console.log("starting");
-        started = true;
-
-        let now = correctedNow();
-        let data = {clienttime: now, uniqID: uniqID};
-        message("memberstart", data);
-        
-        JZZ.synth.Tiny.register('Web Audio');
-        tinysynth = JZZ().openMidiOut('Web Audio');
-
+            let now = correctedNow();
+            let data = {clienttime: now, uniqID: uniqID};
+            message("memberstart", data);
+            
+            JZZ.synth.Tiny.register('Web Audio');
+            tinysynth = JZZ().openMidiOut('Web Audio');
+        });
     });
 
-    $(".configbutton").on("click", function(){
-        $(".configbuttondiv").hide();
-        $(".configdiv").show();
+    document.querySelectorAll('.configbutton').forEach(elem => {
+        elem.addEventListener('click', function() {
+            document.querySelectorAll('.configbuttondiv').forEach(elem => {
+                elem.style.display = 'none';
+            });
+            document.querySelectorAll('.configdiv').forEach(elem => {
+                elem.style.display = 'block';
+            });
+        });
     });
-    $(".savebutton").on("click", function(){
-        update_config_vars();
-        $(".configbuttondiv").show();
-        $(".configdiv").hide();
+
+    document.querySelectorAll('.savebutton').forEach(elem => {
+        elem.addEventListener('click', function() {
+            update_config_vars();
+            document.querySelectorAll('.configbuttondiv').forEach(elem => {
+                elem.style.display = 'block';
+            });
+            document.querySelectorAll('.configdiv').forEach(elem => {
+                elem.style.display = 'none';
+            });
+        });
     });
-    $(".restorebutton").on("click", function(){
-        restore_default_vars();
+
+    document.querySelectorAll('.restorebutton').forEach(elem => {
+        elem.addEventListener('click', function() {
+            restore_default_vars();
+        });
     });
 
 
@@ -250,14 +264,16 @@ function setup_config_vars(){
     BEAVER_URL = localStorage.BEAVER_URL ? localStorage.BEAVER_URL : DEFAULT_BEAVER_URL;
     BEAVER_PORT = localStorage.BEAVER_PORT ? localStorage.BEAVER_PORT : DEFAULT_BEAVER_PORT;
 
-    $("#paretoip").val(BEAVER_URL);
-    $("#paretoport").val(BEAVER_PORT);
+    document.querySelector('#paretoip').value = BEAVER_URL;
+    document.querySelector('#paretoport').value = BEAVER_PORT;
 
 }
 
 function update_config_vars(){
-    BEAVER_URL = $("#paretoip").val();
-    BEAVER_PORT= $("#paretoport").val();
+    const paretoIpElement = document.querySelector('#paretoip');
+    const paretoPortElement = document.querySelector('#paretoport');
+    if (paretoIpElement) BEAVER_URL = paretoIpElement.value;
+    if (paretoPortElement) BEAVER_PORT = paretoPortElement.value;
     localStorage.setItem("BEAVER_URL",BEAVER_URL);
     localStorage.setItem("BEAVER_PORT",BEAVER_PORT);
     setup_beaver();
@@ -266,8 +282,10 @@ function update_config_vars(){
 function restore_default_vars(){
     BEAVER_URL = DEFAULT_BEAVER_URL;
     BEAVER_PORT = DEFAULT_BEAVER_PORT;
-    $("#paretoip").val(BEAVER_URL);
-    $("#paretoport").val(BEAVER_PORT);
+    const paretoIpElement = document.querySelector('#paretoip');
+    const paretoPortElement = document.querySelector('#paretoport');
+    if (paretoIpElement) paretoIpElement.value = BEAVER_URL;
+    if (paretoPortElement) paretoPortElement.value = BEAVER_PORT;
 }
 
 
@@ -441,10 +459,12 @@ function updateChannels(_myChannels, _allchannels){
     if(playing){
         setupChannelVolumes();
     }
-    $(".channels").text(JSON.stringify(myChannels, null , "  "));
+    const channelsElement = document.querySelector('.channels');
+    if (channelsElement) {
+        channelsElement.textContent = JSON.stringify(myChannels, null, "  ");
+    }
     graphicsChannelSetup(myChannels, allChannels);
 }
-
 
 
 /***
@@ -557,7 +577,10 @@ function midiMakeNote(pitch, velocity, duration){
         return;
     }
     notecount++;
-    $(".time").text(notecount +" " +pitch + " "+ velocity + " " + duration);
+    const timeElement = document.querySelector('.time');
+    if (timeElement) {
+        timeElement.textContent = `${notecount} ${pitch} ${velocity} ${duration}`;
+    }
     tinysynth.noteOn(0, pitch, velocity)
     setTimeout(function(){
        tinysynth.noteOff(0, pitch);
@@ -583,7 +606,10 @@ function setMidiVoice(channel, bank, program){
 function startMidiFile(starttime){
     let waittime = starttime - Date.now();
     console.log("starting midi file at", starttime, waittime);
-    $(".dbg").text("starting at " + starttime + " in "+waittime);
+    const dbgElement = document.querySelector('.dbg');
+    if (dbgElement) {
+        dbgElement.textContent = `starting at ${starttime} in ${waittime}`;
+    }
     fromURL(starttime);
 }
 
