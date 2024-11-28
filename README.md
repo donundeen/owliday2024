@@ -43,7 +43,7 @@ Or you can set them in the web page before you start the graphics.
 
 With as many cell phones as you want, connect to the same network that this service is running on.
 
-http://[YOUR IP]:8083/index.html
+http://[YOUR IP]:3003/index.html
 
 Here, you can set the IP and port of Pareto Anywhere by selecting "Setup" and entering the values.
 

@@ -76,7 +76,6 @@ choir.allChannels = Object.keys(parser.channels);
 
 console.log("all midi file channels used ", parser.channels, parser.numChannels);
 
-
 SocketServer.WEBSOCKET_PORT  = WEBSOCKET_PORT;
 SocketServer.WEBSERVER_PORT  = WEBSERVER_PORT;
 SocketServer.default_webpage = default_webpage;
