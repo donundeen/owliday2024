@@ -98,7 +98,7 @@ socket.setMessageReceivedCallback(function(msg, ip){
 //            difference: now - clientnow
             difference: clientnow - now
         }
-        socket.sendMessage("servertime", data);    
+        socket.sendMessage("servertime", data, ip);    
     });
 
 

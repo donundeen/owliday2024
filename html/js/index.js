@@ -963,6 +963,11 @@ function processServerTime(msg){
     console.log("roundtrip ", roundtrip);
 //    timeskew = difference;
     timeskew = difference + (roundtrip/2);
+
+    document.querySelectorAll('.time').forEach(elem => {
+        elem.textContent = "now: " + now + "\nclientsent  " + clientsend + "\nservertime " + servertime + "\ndifference" + difference + "\nroundtrip " + roundtrip + "\ntimeskew" + timeskew;
+    });
+
 }
 
 /***
