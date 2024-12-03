@@ -4,9 +4,6 @@ HOST = HOST.replace(/:[0-9]+/,"");
 // remove port
 console.log(HOST);
 
-
-localStorage.setItem("BEAVER_URL",HOST);
-
 let DEFAULT_WEBSOCKET_PORT= 8098;
 let DEFAULT_WEBSERVER_PORT = 3003;
 let DEFAULT_BEAVER_URL = HOST;
@@ -16,7 +13,6 @@ let WEBSOCKET_PORT= DEFAULT_WEBSOCKET_PORT;
 let WEBSERVER_PORT = DEFAULT_WEBSERVER_PORT;
 let BEAVER_URL = DEFAULT_BEAVER_URL;
 let BEAVER_PORT = DEFAULT_BEAVER_PORT;
-
 
 var singerimages = [
     // open-mouth image first.
@@ -52,7 +48,6 @@ let midifile = "holidaymedley.mid"; // nope
 
 var player;
 var playing = false;
-var out;
 
 let started = false;
 
@@ -538,7 +533,6 @@ function setupChannelPrograms(){
     tinysynth.program(4, getRandomMidiVoice());
     tinysynth.program(5, getRandomMidiVoice());
     tinysynth.program(6, getRandomMidiVoice());
-    //   out = JZZ().or(console.log('Cannot start MIDI engine!')).openMidiOut().or(console.log('Cannot open MIDI Out!'));
 }
 
 
