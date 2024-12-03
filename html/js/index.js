@@ -98,9 +98,19 @@ singerspotorder = singerspotorder.filter((spot) => spot < spoti);
 
 var singerimages = [
     // open-mouth image first.
-    ["images/cormorant-logoOpen.png","images/cormorant-logo.png"],
-    ["images/json-silo-logoOpen2.png","images/json-silo-logo.png"],
-    ["images/cuttlefish-logoOpen.png","images/cuttlefish-logo.png"],
+    ["images/advlib-mouth-open.png","images/advlib-mouth-closed.png"],
+    ["images/barnacles-mouth-open.png","images/barnacles-mouth-closed.png"],
+    ["images/barnowl-mouth-open.png","images/barnowl-mouth-closed.png"],
+    ["images/barterer-mouth-open.png","images/barterer-mouth-closed.png"],
+    ["images/beaver-mouth-open.png","images/beaver-mouth-closed.png"],
+    ["images/charlotte-mouth-open.png","images/charlotte-mouth-closed.png"],
+    ["images/chickadee-mouth-open.png","images/chickadee-mouth-closed.png"],
+    ["images/chimps-mouth-open.png","images/chimps-mouth-closed.png"],
+    ["images/cormorant-mouth-open.png","images/cormorant-mouth-closed.png"],
+    ["images/cuttlefish-mouth-open.png","images/cuttlefish-mouth-closed.png"],
+    ["images/json-silo-mouth-open.png","images/json-silo-mouth-closed.png"],
+    ["images/starling-mouth-open.png","images/starling-mouth-closed.png"],
+    
 ]
 
 let dynambicons = {
