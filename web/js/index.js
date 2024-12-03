@@ -1,6 +1,15 @@
+let HOST =  window.location.host;
+console.log(HOST);
+HOST = HOST.replace(/:[0-9]+/,"");
+// remove port
+console.log(HOST);
+
+
+localStorage.setItem("BEAVER_URL",HOST);
+
 let DEFAULT_WEBSOCKET_PORT= 8098;
 let DEFAULT_WEBSERVER_PORT = 3003;
-let DEFAULT_BEAVER_URL = "10.0.0.200";
+let DEFAULT_BEAVER_URL = HOST;
 let DEFAULT_BEAVER_PORT = 3001;
 
 let WEBSOCKET_PORT= DEFAULT_WEBSOCKET_PORT;
@@ -9,7 +18,33 @@ let BEAVER_URL = DEFAULT_BEAVER_URL;
 let BEAVER_PORT = DEFAULT_BEAVER_PORT;
 
 
-let HOST = false;
+var singerimages = [
+    // open-mouth image first.
+    ["images/advlib-mouth-open.png","images/advlib-mouth-closed.png"],
+    ["images/barnacles-mouth-open.png","images/barnacles-mouth-closed.png"],
+    ["images/barnowl-mouth-open.png","images/barnowl-mouth-closed.png"],
+    ["images/barterer-mouth-open.png","images/barterer-mouth-closed.png"],
+    ["images/beaver-mouth-open.png","images/beaver-mouth-closed.png"],
+    ["images/charlotte-mouth-open.png","images/charlotte-mouth-closed.png"],
+    ["images/chickadee-mouth-open.png","images/chickadee-mouth-closed.png"],
+    ["images/chimps-mouth-open.png","images/chimps-mouth-closed.png"],
+    ["images/cormorant-mouth-open.png","images/cormorant-mouth-closed.png"],
+    ["images/cuttlefish-mouth-open.png","images/cuttlefish-mouth-closed.png"],
+    ["images/json-silo-mouth-open.png","images/json-silo-mouth-closed.png"],
+    ["images/starling-mouth-open.png","images/starling-mouth-closed.png"],
+]
+
+let dynambicons = {
+    acceleration: "🚀",
+    isLiquidDetected: "💧",
+    temperature: "🌡️",
+    relativeHumidity: "💦",
+    illuminance: "☀️",
+    isMotionDetected: "🏃🏻‍♀️",
+    numberOfOccupants:"👪🏽",
+    batteryPercentage: "🔋"
+};
+
 
 // midifile here is default- server will tell client which one to play when it sends "startplaying" message
 let mididir = "midi";
@@ -48,7 +83,6 @@ var singerHeight =  singerOrigHeight * singerRatio;
 
 var singerSafeScreenWidth = screenwidth - singerWidth;
 var singerSafeScreenHeight = screenheight - singerHeight;
-
 
 var singerspots = [
     [],[],[],[],[],[], // 0-5
@@ -96,33 +130,9 @@ console.log("singerspots ", singerspots);
 singerspotorder = singerspotorder.filter((spot) => spot < spoti);
 
 
-var singerimages = [
-    // open-mouth image first.
-    ["images/advlib-mouth-open.png","images/advlib-mouth-closed.png"],
-    ["images/barnacles-mouth-open.png","images/barnacles-mouth-closed.png"],
-    ["images/barnowl-mouth-open.png","images/barnowl-mouth-closed.png"],
-    ["images/barterer-mouth-open.png","images/barterer-mouth-closed.png"],
-    ["images/beaver-mouth-open.png","images/beaver-mouth-closed.png"],
-    ["images/charlotte-mouth-open.png","images/charlotte-mouth-closed.png"],
-    ["images/chickadee-mouth-open.png","images/chickadee-mouth-closed.png"],
-    ["images/chimps-mouth-open.png","images/chimps-mouth-closed.png"],
-    ["images/cormorant-mouth-open.png","images/cormorant-mouth-closed.png"],
-    ["images/cuttlefish-mouth-open.png","images/cuttlefish-mouth-closed.png"],
-    ["images/json-silo-mouth-open.png","images/json-silo-mouth-closed.png"],
-    ["images/starling-mouth-open.png","images/starling-mouth-closed.png"],
-    
-]
+let showing_config_div = false;
+let beaver_connection_ok = false;
 
-let dynambicons = {
-    acceleration: "🚀",
-    isLiquidDetected: "💧",
-    temperature: "🌡️",
-    relativeHumidity: "💦",
-    illuminance: "☀️",
-    isMotionDetected: "🏃🏻‍♀️",
-    numberOfOccupants:"👪🏽",
-    batteryPercentage: "🔋"
-};
 
 // Replace jQuery document ready
 document.addEventListener('DOMContentLoaded', function() {
@@ -131,18 +141,10 @@ document.addEventListener('DOMContentLoaded', function() {
     screenwidth = (window.innerWidth > 0) ? window.innerWidth : screen.width;
     screenheight = (window.innerHeight > 0) ? window.innerHeight : screen.height;
 
-    // chnage this depending on location of webserver. Figure out a way to make this more dynamic...
-    HOST =  window.location.host;
-    HOST = HOST.replace(/:[0-9]+/,"");
-    // remove port
-    console.log(HOST);
-
-
     setup_config_vars();
 
     setup_beaver();
     setup_websockets();
-
 
     setInterval(function(){
         document.querySelectorAll('.time2').forEach(elem => {
@@ -187,6 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.configdiv').forEach(elem => {
                 elem.style.display = 'block';
             });
+            showing_config_div = true;            
         });
     });
 
@@ -199,6 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.configdiv').forEach(elem => {
                 elem.style.display = 'none';
             });
+            showing_config_div = false;            
         });
     });
 
@@ -309,7 +313,8 @@ let raddecElems = {};
  */
 function setup_beaver(){
     // https://github.com/reelyactive/beaver
-    console.log("starting beaver");
+    console.log("starting beaver "+ BEAVER_URL);
+
     beaver.stream("http://"+BEAVER_URL+":"+BEAVER_PORT, {io: io});
 
     beaver.on("raddec", function(raddec){
@@ -328,13 +333,29 @@ function setup_beaver(){
         removeBeaverDevice(deviceSignature);
     });
     beaver.on("error", function(e){
-        console.log("beaver error", e);
+        console.log("beaver error", e.name);
+        console.log(e.message);
+        console.log(BEAVER_URL);
+        if(e.message.match("Failed to GET") || e.message.match("Socket.IO connect error on")){
+            console.log("beaver not found");
+            beaver_connection_ok = false;
+            if(!showing_config_div){
+                document.querySelectorAll('.configbuttondiv').forEach(elem => {
+                    elem.style.display = 'block';
+                });
+            }             
+        }        
     })
     beaver.on("connect",function(e){
-        console.log("beaver connect");
+        console.log("beaver connect  "+ BEAVER_URL);
+        document.querySelectorAll('.configbuttondiv').forEach(elem => {
+            elem.style.display = 'none';
+        });        
+        beaver_connection_ok = true;        
+
     });
     beaver.on("disconnect",function(e){
-        console.log("beaver disconnect");
+        console.log("beaver disconnect  "+ BEAVER_URL);
     });
 }
 

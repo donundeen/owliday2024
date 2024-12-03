@@ -8,7 +8,7 @@ Type=simple
 PIDFile=/var/run/owliday2024.pid
 Restart=on-failure
 RestartSec=4
-ExecStart=/home/pi/owliday2024/system/runowliday2024.sh
+ExecStart=/home/pi/owliday2024/bin/runowliday2024.sh
 
 [Install]
 WantedBy=default.target
