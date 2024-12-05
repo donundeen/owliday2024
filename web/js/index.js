@@ -14,6 +14,9 @@ let WEBSERVER_PORT = DEFAULT_WEBSERVER_PORT;
 let BEAVER_URL = DEFAULT_BEAVER_URL;
 let BEAVER_PORT = DEFAULT_BEAVER_PORT;
 
+// sometimes I uncomment this to force a change to the localStorage variable.
+//localStorage.setItem("BEAVER_URL",BEAVER_URL);
+
 var singerimages = [
     // open-mouth image first.
     ["images/advlib-mouth-open.png","images/advlib-mouth-closed.png"],
@@ -285,7 +288,11 @@ function update_config_vars(){
     if (paretoPortElement) BEAVER_PORT = paretoPortElement.value;
     localStorage.setItem("BEAVER_URL",BEAVER_URL);
     localStorage.setItem("BEAVER_PORT",BEAVER_PORT);
-    setup_beaver();
+
+    // reload the page, so Beaver starts a fresh connection
+    location.reload();
+
+    //    setup_beaver();
 }
 
 function restore_default_vars(){
@@ -787,6 +794,7 @@ function graphicsPlaceDynambs(dynamblist){
             let singercentery = Math.floor(
                 singertop + (singerHeight / 2)
                 )
+                /*
             let sposx = singercenterx
                 + Math.floor(
                         (Math.random() * singerWidth)
@@ -796,7 +804,12 @@ function graphicsPlaceDynambs(dynamblist){
                 + Math.floor(
                         (Math.random() * singerHeight)
                         - (singerHeight / 2) 
-                    );                    
+                    );
+                    */
+            let sposx = singercenterx;
+             let sposy = singercentery - ((singerHeight / 2) * 1.2) ;
+                  
+
             dynambicon = singerdynamb.icon;
             iconelem = document.createElement("p");
             iconelem.classList.add("dynambicon");
@@ -804,14 +817,22 @@ function graphicsPlaceDynambs(dynamblist){
             iconelem.setAttribute("id",iconid);
             iconelem.innerText = dynambicon;
             iconelem.style.position = "absolute";
+
+
             iconelem.style.left = sposx;
             iconelem.style.top = sposy;
+            let rotationt = (Math.random() * 6) + 4;
+            iconelem.style.animation = "rotation1 "+rotationt.toString()+"s linear 0s infinite normal none";
 //            let transform = singercenterx+"px "+singercentery+"px";
-            let transform = (singercenterx - sposx).toString()+"px "+(singercentery - sposy).toString()+"px";
+//let transform = (singercenterx - sposx).toString()+"px "+(singercentery - sposy).toString()+"px";
+            let transform = (singercenterx - sposx).toString()+"px "+((singercentery - sposy)).toString()+"px";
+            console.log("transform", transform);
             iconelem.style["transform-origin"] = transform;
 
-            document.body.appendChild(iconelem);            
             
+
+            document.body.appendChild(iconelem);           
+
         }
     }
 }

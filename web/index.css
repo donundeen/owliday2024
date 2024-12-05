@@ -10,6 +10,11 @@ body{
 
 }
 
+p{
+  margin: 0;
+}
+
+
 .debug{
   position:absolute;
   top:10px;
@@ -28,11 +33,12 @@ body{
 .singer {
     font-size: 4em;
     z-index: 500;
+    
 }
 
 .dynambicon{
     font-size: 2em;
-    animation: rotation1 6s linear 0s infinite normal none; 
+    /*animation: rotation1 6s linear 0s infinite normal none; */
     z-index: 1000;
 }
 
