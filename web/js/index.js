@@ -1,3 +1,53 @@
+/**
+ * Some Variables you might want to change
+ */
+
+/**
+ * Icons for the dynambs.
+ *  As new dynambs are added, you can add new emojie for them here
+ */
+let dynambicons = {
+    acceleration: "🚀",
+    isLiquidDetected: "💧",
+    temperature: "🌡️",
+    relativeHumidity: "💦",
+    illuminance: "☀️",
+    isMotionDetected: "🏃🏻‍♀️",
+    numberOfOccupants:"👪🏽",
+    batteryPercentage: "🔋"
+};
+
+
+/**
+ * Icons for the singers.
+ * We are using images of Pareto Anywhere mascots for the singers,
+ *  but you can change them to anything you want. 
+ *  Just make sure that the images are in the images/ directory, 
+ *  and that you have a pair of images each singer, one open mouth, one closed mouth.
+ *  The open mouth image is first in the array.
+ */
+var singerimages = [
+    // open-mouth image first.
+    ["images/advlib-mouth-open.png","images/advlib-mouth-closed.png"],
+    ["images/barnacles-mouth-open.png","images/barnacles-mouth-closed.png"],
+    ["images/barnowl-mouth-open.png","images/barnowl-mouth-closed.png"],
+    ["images/barterer-mouth-open.png","images/barterer-mouth-closed.png"],
+    ["images/beaver-mouth-open.png","images/beaver-mouth-closed.png"],
+    ["images/charlotte-mouth-open.png","images/charlotte-mouth-closed.png"],
+    ["images/chickadee-mouth-open.png","images/chickadee-mouth-closed.png"],
+    ["images/chimps-mouth-open.png","images/chimps-mouth-closed.png"],
+    ["images/cormorant-mouth-open.png","images/cormorant-mouth-closed.png"],
+    ["images/cuttlefish-mouth-open.png","images/cuttlefish-mouth-closed.png"],
+    ["images/json-silo-mouth-open.png","images/json-silo-mouth-closed.png"],
+    ["images/starling-mouth-open.png","images/starling-mouth-closed.png"],
+]
+
+
+
+/*
+* everything below here you probably don't need to change.
+*/
+
 let HOST =  window.location.host;
 console.log(HOST);
 HOST = HOST.replace(/:[0-9]+/,"");
@@ -17,58 +67,41 @@ let BEAVER_PORT = DEFAULT_BEAVER_PORT;
 // sometimes I uncomment this to force a change to the localStorage variable.
 //localStorage.setItem("BEAVER_URL",BEAVER_URL);
 
-var singerimages = [
-    // open-mouth image first.
-    ["images/advlib-mouth-open.png","images/advlib-mouth-closed.png"],
-    ["images/barnacles-mouth-open.png","images/barnacles-mouth-closed.png"],
-    ["images/barnowl-mouth-open.png","images/barnowl-mouth-closed.png"],
-    ["images/barterer-mouth-open.png","images/barterer-mouth-closed.png"],
-    ["images/beaver-mouth-open.png","images/beaver-mouth-closed.png"],
-    ["images/charlotte-mouth-open.png","images/charlotte-mouth-closed.png"],
-    ["images/chickadee-mouth-open.png","images/chickadee-mouth-closed.png"],
-    ["images/chimps-mouth-open.png","images/chimps-mouth-closed.png"],
-    ["images/cormorant-mouth-open.png","images/cormorant-mouth-closed.png"],
-    ["images/cuttlefish-mouth-open.png","images/cuttlefish-mouth-closed.png"],
-    ["images/json-silo-mouth-open.png","images/json-silo-mouth-closed.png"],
-    ["images/starling-mouth-open.png","images/starling-mouth-closed.png"],
-]
-
-let dynambicons = {
-    acceleration: "🚀",
-    isLiquidDetected: "💧",
-    temperature: "🌡️",
-    relativeHumidity: "💦",
-    illuminance: "☀️",
-    isMotionDetected: "🏃🏻‍♀️",
-    numberOfOccupants:"👪🏽",
-    batteryPercentage: "🔋"
-};
-
 
 // midifile here is default- server will tell client which one to play when it sends "startplaying" message
 let mididir = "midi";
 let midifile = "holidaymedley.mid"; // nope
 
-var player;
-var playing = false;
-
-let started = false;
-
-let tinysynth = false; //JZZ().openMidiOut('Web Audio');
+var player;  // the midi player
+var playing = false; // tracks is the song is playing
+let started = false; // set to true once "Play" is pressed. Back to false once the song is over.
+ 
+let tinysynth = false; //JZZ().openMidiOut('Web Audio'); // the synth that generates the tones
 
 let timeskew = 0;
 
-let firstnoteplayed = false;
+let firstnoteplayed = false; // tracks if the first note has been played
 
-let uniqID = Math.random() * 10000 * Date.now(); 
+let uniqID = Math.random() * 10000 * Date.now();  // a unique ID for this client.
 
 let myChannels = []; // array of channel numbers that I'm playing. The others get turned down.
 let prevMyChannels = [] // so we can delete channels that were just removed.
 let allChannels = []; // array of all channel numbers
 
+let exludevoices = []; // list of synth voices that are excluded from the choir, because they are annoying.
+
+
+// websocket stuff
 let ws = false;
 let wsready = false;  
 
+
+/***
+ * Setting up the graphics, screen layout, etc.
+ * It's a mibt of convoluted code 
+ * to figure out where to place the singers on the screen, 
+ * so it looks good as singers are added and removed.
+ */
 var singerOrigWidth = 160;
 var singerOrigHeight = 160;
 
@@ -104,8 +137,7 @@ let singerspotorder = [
 ];
 
 
-let exludevoices = []
-
+// determinining coordinates for singerspots
 var numsingerrows = Math.floor(screenheight / singerHeight);
 var numsingercols = Math.floor(screenwidth / singerWidth);
 console.log("signer size", singerWidth, singerHeight);
@@ -128,11 +160,13 @@ console.log("singerspots ", singerspots);
 singerspotorder = singerspotorder.filter((spot) => spot < spoti);
 
 
+// whether or not the config div is showing
 let showing_config_div = false;
+
+// whether or not the beaver connection is ok
 let beaver_connection_ok = false;
 
 
-// Replace jQuery document ready
 document.addEventListener('DOMContentLoaded', function() {
     console.log("starting");
 
@@ -140,34 +174,38 @@ document.addEventListener('DOMContentLoaded', function() {
     screenheight = (window.innerHeight > 0) ? window.innerHeight : screen.height;
 
     setup_config_vars();
-
     setup_beaver();
     setup_websockets();
 
+    // some debugging code to show the current time. Commented out for now.
+    /*
     setInterval(function(){
         document.querySelectorAll('.time2').forEach(elem => {
             elem.textContent = correctedNow();
         });
     }, 100);
+    */
     
     /**
      * set timing for updating the dynambs to the grpahics display
      */
-
     setInterval(updateDynambs, 2000);
 
     /**
      * setup interaction buttons
      */
+
+    // play button - sends the request to the server, 
+    // which returns with a starttime for the song.
+    // the client then starts playing the song at that time.
     document.querySelectorAll('.play').forEach(elem => {
         elem.addEventListener('click', function() {
-            console.log("stating1");
+            console.log("starting");
             if(started){
                 // shuffle the instrument choices.
                 setupChannelPrograms();
                 return;
             }
-            console.log("starting2");
             started = true;
 
             let now = correctedNow();
@@ -179,6 +217,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // config button - shows the config div, 
+    // which allows you to change the Pareto Anywhere Beaver server address and port.
+    // this only appears if the beaver connection is not ok.
     document.querySelectorAll('.configbutton').forEach(elem => {
         elem.addEventListener('click', function() {
             document.querySelectorAll('.configbuttondiv').forEach(elem => {
@@ -191,6 +232,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // save button - saves the config vars to localStorage, 
+    // and reloads the page, so Beaver starts a fresh connection
     document.querySelectorAll('.savebutton').forEach(elem => {
         elem.addEventListener('click', function() {
             update_config_vars();
@@ -204,6 +247,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // restore button - restores the default config vars
+    // in the config div form
     document.querySelectorAll('.restorebutton').forEach(elem => {
         elem.addEventListener('click', function() {
             restore_default_vars();
@@ -243,6 +288,7 @@ function setup_websockets(){
         console.log(msg);
     }
 
+    // handle messages from the server
     ws.onmessage = function(event) {
     //    console.log("got message ", event);
         msg = JSON.parse(event.data);
@@ -252,16 +298,23 @@ function setup_websockets(){
             midiMakeNote(msg.data.pitch, msg.data.velocity, msg.data.duration)
         }
 
+        // this message is used to sync the client and server time
         if(msg.address == "servertime"){
             processServerTime(msg);
         }
 
+        // this message is used to start the song and the specified time in the future
         if(msg.address == "startplaying"){
             console.log("startingplaing", msg);
             midifile= msg.data.midifile;
             startGraphics();
             startMidiFile(msg.data.starttime);
         }
+
+        // this message is used to get the list of channels for this player
+        // the play then adjusts the tones and volumes for the channels
+        // and rearranges the singers on the screen
+        // to match the channels.
 
         if(msg.address == "yourchannels"){
             // getting the list of channels for this player
@@ -272,6 +325,9 @@ function setup_websockets(){
 }
 
 
+/**
+ * Setting up the config vars from localStorage, or default values
+ */
 function setup_config_vars(){
     BEAVER_URL = localStorage.BEAVER_URL ? localStorage.BEAVER_URL : DEFAULT_BEAVER_URL;
     BEAVER_PORT = localStorage.BEAVER_PORT ? localStorage.BEAVER_PORT : DEFAULT_BEAVER_PORT;
@@ -281,6 +337,9 @@ function setup_config_vars(){
 
 }
 
+/**
+ * Updating the config vars from the config div form
+ */
 function update_config_vars(){
     const paretoIpElement = document.querySelector('#paretoip');
     const paretoPortElement = document.querySelector('#paretoport');
@@ -295,6 +354,9 @@ function update_config_vars(){
     //    setup_beaver();
 }
 
+/**
+ * Restoring the default config vars into the config div form
+ */
 function restore_default_vars(){
     BEAVER_URL = DEFAULT_BEAVER_URL;
     BEAVER_PORT = DEFAULT_BEAVER_PORT;
@@ -319,17 +381,24 @@ function setup_beaver(){
 
     beaver.stream("http://"+BEAVER_URL+":"+BEAVER_PORT, {io: io});
 
+    // raddecs make stars!
     beaver.on("raddec", function(raddec){
 //        console.log("beaver raddec", raddec);
         updateBeaverRaddec(raddec);
     });
+    
+    // dynambs are icons that float around the singers
     beaver.on("dynamb", function(dynamb){
 //        console.log("beaver dynamb", dynamb);
         updateBeaverDynamb(dynamb);
     });
+
+    // appearance of a device. Currently not used.
     beaver.on("appearance", function(deviceSignature, device){
   //      console.log("beaver appearance", deviceSignature, device);
     });
+
+    // disappearance of a device. triggers the dissappearance of a star.
     beaver.on("disappearance", function(deviceSignature){
 //        console.log("beaver disappearance", deviceSignature);
         removeBeaverDevice(deviceSignature);
@@ -365,6 +434,8 @@ function setup_beaver(){
 /**
  * update list of raddecs
  * @param {*} raddecs 
+ * each raddec is a star, rancomly placed.
+ * Its twinkle speed is determined by the rssiSignature[0].rssi
  */
 function updateBeaverRaddec(raddec){
     let star = false;
@@ -383,6 +454,10 @@ function updateBeaverRaddec(raddec){
     star.style.animation =  "customAni "+scaledTiming+"s ease 0s infinite normal none";
 }
 
+/**
+ * remove a star from the screen
+ * @param {*} deviceSignature 
+ */
 function removeBeaverDevice(deviceSignature){
 //    console.log("removing ", deviceSignature);
     if(raddecElems[deviceSignature]){
@@ -392,7 +467,10 @@ function removeBeaverDevice(deviceSignature){
 }
 
 
-
+/**
+ * update the list of dynambs
+ * @param {*} dynamb 
+ */
 let allDynambDevices = {};
 function updateBeaverDynamb(dynamb){
     allDynambDevices[dynamb.deviceId] = dynamb;
@@ -400,7 +478,7 @@ function updateBeaverDynamb(dynamb){
 
 
 /**
- * put dynamb data into something a bit easier to manage
+* put dynamb data into something a bit easier to manage
  * @param {*} data 
  * @returns 
  */
@@ -458,6 +536,8 @@ function updateDynambs(){
 
 /**
  * Updating channels - relates to audio and graphics
+ * update the volumes of all channels, to only play the channels that are in myChannels
+ * and rearrange the singers on the screen to match the channels.
  */
 function updateChannels(_myChannels, _allchannels){
     console.log("updateChannels", _myChannels);
@@ -496,6 +576,8 @@ function doAtFirstNote(){
  */
 function midievent(midievent){
     /*
+    // this is a lot of debugging code to see what's going on with the midi event. 
+    Commented out for now.
     console.log(midievent,
         midievent.getChannel(), 
         midievent.getNote(),  
@@ -512,6 +594,8 @@ function midievent(midievent){
     );
     */
 
+    // midi notes on and off open and close the singers mouths 
+    //by switching between the two images. 
     if(midievent.isNoteOn()){
 //        console.log("on", midievent.getChannel(), midievent.getNote());
         graphicsNoteOn(midievent.getChannel());
@@ -544,6 +628,8 @@ function setupChannelPrograms(){
 
 
 let assignedVoices = [];
+// midi tones between 0 and 115 are all pretty good.
+// we don't want to use the same voice for two singers.
 function getRandomMidiVoice(){
     let foundone = false;
     let count = 0;
@@ -578,7 +664,7 @@ function setupChannelVolumes(){
 
 
 let notecount = 0;
-// this isn't used, but could be.
+// this isn't used, but could be. let's keep it around.
 function midiMakeNote(pitch, velocity, duration){
     if(!started){
         return;
@@ -664,6 +750,8 @@ function fromURL(starttime) {
 
 /***
  * Load Midi data and setup play time
+ * The song might start at a future time,
+ * or we might be seeking to a point in the song.
  */
 function load(data, name, starttime) {
     console.log("load", name, starttime);
@@ -754,15 +842,21 @@ function setupGraphics(){
 
 }
 
+// hide config and start buttons
 function startGraphics(){
     document.querySelector('.startandconfig').style.display = "none";
 }
 
+// show config and start buttons
 function stopGraphics(){
     document.querySelector('.startandconfig').style.display = "block";
 }
 
-
+/**
+ * Place the dynambs on the screen
+ * they spin around the singers at different rates.
+ * @param {*} dynamblist 
+ */
 function graphicsPlaceDynambs(dynamblist){
 //    console.log("graphicsPlaceDynambs");
 
@@ -794,21 +888,9 @@ function graphicsPlaceDynambs(dynamblist){
             let singercentery = Math.floor(
                 singertop + (singerHeight / 2)
                 )
-                /*
-            let sposx = singercenterx
-                + Math.floor(
-                        (Math.random() * singerWidth)
-                        - (singerWidth / 2) 
-                    );
-            let sposy = singercentery
-                + Math.floor(
-                        (Math.random() * singerHeight)
-                        - (singerHeight / 2) 
-                    );
-                    */
+
             let sposx = singercenterx;
-             let sposy = singercentery - ((singerHeight / 2) * 1.2) ;
-                  
+            let sposy = singercentery - ((singerHeight / 2) * 1.2) ;      
 
             dynambicon = singerdynamb.icon;
             iconelem = document.createElement("p");
@@ -818,18 +900,12 @@ function graphicsPlaceDynambs(dynamblist){
             iconelem.innerText = dynambicon;
             iconelem.style.position = "absolute";
 
-
             iconelem.style.left = sposx;
             iconelem.style.top = sposy;
             let rotationt = (Math.random() * 6) + 4;
             iconelem.style.animation = "rotation1 "+rotationt.toString()+"s linear 0s infinite normal none";
-//            let transform = singercenterx+"px "+singercentery+"px";
-//let transform = (singercenterx - sposx).toString()+"px "+(singercentery - sposy).toString()+"px";
             let transform = (singercenterx - sposx).toString()+"px "+((singercentery - sposy)).toString()+"px";
-            console.log("transform", transform);
             iconelem.style["transform-origin"] = transform;
-
-            
 
             document.body.appendChild(iconelem);           
 
@@ -837,6 +913,11 @@ function graphicsPlaceDynambs(dynamblist){
     }
 }
 
+/**
+ * Setup the singers on the screen
+ * @param {*} channelList 
+ * @param {*} allChannels 
+ */
 function graphicsChannelSetup(channelList, allChannels){
     let singerindex = 0;
     let staying =  channelList.filter(x => prevMyChannels.includes(x));
@@ -902,6 +983,12 @@ function graphicsChannelSetup(channelList, allChannels){
     }
 }
 
+
+/**
+ * Making the mascot "SING"!
+ * requires a bit of timing, so the mouth stays open for a bit.
+ * @param {*} channel 
+ */
 let channelsOn = {};
 let  mouths = 0;
 function graphicsNoteOn(channel){
@@ -920,6 +1007,11 @@ function graphicsNoteOn(channel){
         }
     }
 }
+
+/**
+ * Closing the mouth
+ * @param {*} channel 
+ */ 
 function graphicsNoteOff(channel){
   //  console.log("off", channel);
     channelsOn[channel] = false;     
@@ -944,11 +1036,18 @@ function graphicsNoteOff(channel){
 Utility Functions
 */
 
-
-
-
 let scalemin = 1000;
 let scalemax = -10000;
+/**
+ * Scale the input value to the output range
+ * the input is a value between scalemin and scalemax.
+ * but scalemin and scalemax are updated to the min and max of the input values.
+ * the output is a value between outmin and outmax
+ * @param {*} input 
+ * @param {*} outmin 
+ * @param {*} outmax 
+ * @returns 
+ */
 function dynScale(input, outmin, outmax){
     if(input > scalemax){
         scalemax = input;
@@ -999,6 +1098,18 @@ function timecheck(){
     message("gettime", data);
 }
 
+/**
+ * Process the server time message
+ * so determine what the time skew is.
+ * The time skew is used to adjust the client time to the server time.
+ * So all devices are in sync.
+ * The skew error between devices is 
+ * up to half of the difference between 
+ * the lag from the client to the server 
+ * and the lag from the server to the client
+ * (because the client divides the total roundtrip by 2, 
+ * but maybe the lag was a lot more in one direction than the other).
+ */
 function processServerTime(msg){
     console.log("processservertime" , msg);
     let now = Date.now();
@@ -1013,7 +1124,6 @@ function processServerTime(msg){
     document.querySelectorAll('.time').forEach(elem => {
         elem.textContent = "now: " + now + "\nclientsent  " + clientsend + "\nservertime " + servertime + "\ndifference" + difference + "\nroundtrip " + roundtrip + "\ntimeskew" + timeskew;
     });
-
 }
 
 /***
